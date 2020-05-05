@@ -23,6 +23,8 @@ from init_problem import Configuration_Gyro as Configuration
 
 debug = False
 
+############### IM UP TO DATE ###################################
+
 def py_init(conf):
     t = [0]
     x = [np.array([conf.x_start,conf.x_start2])]
