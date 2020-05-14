@@ -37,6 +37,8 @@ set (PIC_FILES
      ../pic/pushers/boris.c++
      ../pic/pushers/boris_drag.c++
      ../pic/pushers/vay.c++
+     ../pic/pushers/verlet_loc.c++
+     ../pic/pushers/verlet_vel.c++
      ../pic/interpolators/linear.c++
      ../pic/depositers/zigzag.c++
      )

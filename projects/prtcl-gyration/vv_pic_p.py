@@ -381,8 +381,8 @@ if __name__ == "__main__":
         debug_print(grid, "push")
 
         for tile in pytools.tiles_local(grid):
-            # boris_synced_pos(tile)
-            pushloc.solve(tile)
+            boris_synced_pos(tile)
+            # pushloc.solve(tile)
 
         timer.stop_comp("push")
 
@@ -456,8 +456,8 @@ if __name__ == "__main__":
         debug_print(grid, "push")
 
         for tile in pytools.tiles_local(grid):
-            # boris_synced_vel(tile)
-            pushvel.solve(tile)
+            boris_synced_vel(tile)
+            # pushvel.solve(tile)
 
         timer.stop_comp("push")
 
@@ -692,7 +692,7 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_sync(t,x,y,vx,vy,conf,'sync_c')
+    output_sync(t,x,y,vx,vy,conf,'sync')
 
     print("")
     print("------------------------------------- END ------------------------------------")

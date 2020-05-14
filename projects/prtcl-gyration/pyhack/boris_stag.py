@@ -1,6 +1,6 @@
 import numpy as np
-from py_runko_aux import *
-from boris import *
+from pyhack.py_runko_aux import *
+from pyhack.boris import *
 
 def boris_staggered(tile):
     dt = tile.cfl

@@ -71,5 +71,8 @@ class Configuration_Gyro(Configuration):
         self.zmin = 0.0
         self.zmax = self.Nz*self.NzMesh*self.dz
 
+        self.larmor /= self.gamma
+        self.larmor2 /= self.gamma
+
         self.x_start = self.NxMesh/2. + self.larmor
         self.x_start2 = self.NxMesh/2. + self.larmor2

@@ -7,15 +7,12 @@ import numpy as np
 import sys, os
 import matplotlib.pyplot as plt
 
-from gauss_legendre import CollGaussLegendre
-from gauss_lobatto import CollGaussLobatto
-
 # runko + auxiliary modules
 import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
-from py_runko_aux import *
-from analytical_gyro import *
+from pyhack.py_runko_aux import *
+from pyhack.analytical_gyro import *
 
 
 # problem specific modules

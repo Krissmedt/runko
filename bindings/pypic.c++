@@ -5,12 +5,14 @@ namespace py = pybind11;
 
 //--------------------------------------------------
 // experimental PIC module
-  
+
 #include "../pic/tile.h"
 #include "../pic/pushers/pusher.h"
 #include "../pic/pushers/boris.h"
 #include "../pic/pushers/boris_drag.h"
 #include "../pic/pushers/vay.h"
+#include "../pic/pushers/verlet_loc.h"
+#include "../pic/pushers/verlet_vel.h"
 
 #include "../pic/interpolators/interpolator.h"
 #include "../pic/interpolators/linear.h"
@@ -40,21 +42,21 @@ namespace pic {
 template<size_t D>
 auto declare_tile(
     py::module& m,
-    const std::string& pyclass_name) 
+    const std::string& pyclass_name)
 {
 
-  return 
-  py::class_<pic::Tile<D>, 
+  return
+  py::class_<pic::Tile<D>,
              fields::Tile<D>,
-             corgi::Tile<D>, 
+             corgi::Tile<D>,
              std::shared_ptr<pic::Tile<D>>
-             >(m, 
+             >(m,
                pyclass_name.c_str(),
                py::multiple_inheritance()
                )
     .def(py::init<int, int, int>())
     .def_readwrite("cfl",       &pic::Tile<D>::cfl)
-    .def("get_container",       &pic::Tile<D>::get_container, 
+    .def("get_container",       &pic::Tile<D>::get_container,
         py::return_value_policy::reference, py::keep_alive<1,0>())
     .def("set_container",       &pic::Tile<D>::set_container)
 
@@ -71,7 +73,7 @@ auto declare_tile(
 template<size_t D>
 auto declare_prtcl_container(
     py::module& m,
-    const std::string& pyclass_name) 
+    const std::string& pyclass_name)
 {
 
   return py::class_<
@@ -81,44 +83,44 @@ auto declare_prtcl_container(
     .def("reserve",       &pic::ParticleContainer<D>::reserve)
     .def("size",          &pic::ParticleContainer<D>::size)
     .def("add_particle",  &pic::ParticleContainer<D>::add_particle)
-    .def("add_particle2", [](pic::ParticleContainer<D>& s, 
+    .def("add_particle2", [](pic::ParticleContainer<D>& s,
                             real_prtcl xx, real_prtcl yy, real_prtcl zz,
                             real_prtcl vx, real_prtcl vy, real_prtcl vz, real_prtcl wgt)
         {
           s.add_particle({xx,yy,zz}, {vx,vy,vz}, wgt);
         })
     .def("set_keygen_state", &pic::ParticleContainer<D>::set_keygen_state)
-    .def("loc",          [](pic::ParticleContainer<D>& s, size_t idim) 
+    .def("loc",          [](pic::ParticleContainer<D>& s, size_t idim)
         {
-          return s.loc(idim); 
+          return s.loc(idim);
         }, py::return_value_policy::reference)
-    .def("vel",          [](pic::ParticleContainer<D>& s, size_t idim) 
+    .def("vel",          [](pic::ParticleContainer<D>& s, size_t idim)
         {
-          return s.vel(idim); 
+          return s.vel(idim);
         }, py::return_value_policy::reference)
-    .def("wgt",          [](pic::ParticleContainer<D>& s) 
+    .def("wgt",          [](pic::ParticleContainer<D>& s)
         {
-          return s.wgt(); 
+          return s.wgt();
         }, py::return_value_policy::reference)
-    .def("id",           [](pic::ParticleContainer<D>& s, size_t idim) 
+    .def("id",           [](pic::ParticleContainer<D>& s, size_t idim)
         {
-          return s.id(idim); 
+          return s.id(idim);
         }, py::return_value_policy::reference)
 
     //temporary binding; only needed for unit tests
-    .def("ex",          [](pic::ParticleContainer<D>& s, int i) 
+    .def("ex",          [](pic::ParticleContainer<D>& s, int i)
         {
           int nparts = s.size();
           assert(i < nparts);
           return s.Epart[i];
         }, py::return_value_policy::reference)
-    .def("ey",          [](pic::ParticleContainer<D>& s, int i) 
+    .def("ey",          [](pic::ParticleContainer<D>& s, int i)
         {
           int nparts = s.size();
           assert(i < nparts);
           return s.Epart[i + 1*nparts];
         }, py::return_value_policy::reference)
-    .def("ez",          [](pic::ParticleContainer<D>& s, int i) 
+    .def("ez",          [](pic::ParticleContainer<D>& s, int i)
         {
           int nparts = s.size();
           assert(i < nparts);
@@ -130,13 +132,13 @@ auto declare_prtcl_container(
           assert(i < nparts);
           return s.Bpart[i];
         }, py::return_value_policy::reference)
-    .def("by",          [](pic::ParticleContainer<D>& s, int i) 
+    .def("by",          [](pic::ParticleContainer<D>& s, int i)
         {
           int nparts = s.size();
           assert(i < nparts);
           return s.Bpart[i + 1*nparts];
         }, py::return_value_policy::reference)
-    .def("bz",          [](pic::ParticleContainer<D>& s, int i) 
+    .def("bz",          [](pic::ParticleContainer<D>& s, int i)
         {
           int nparts = s.size();
           assert(i < nparts);
@@ -151,16 +153,16 @@ namespace wall {
   template<size_t D, int S>
     auto declare_tile(
         py::module& m,
-        const std::string& pyclass_name) 
+        const std::string& pyclass_name)
     {
       return
         py::class_<pic::wall::Tile<D, S>,
                    pic::Tile<D>,
                    fields::damping::Tile<D, S>,
                    fields::Tile<D>,
-                   corgi::Tile<D>, 
+                   corgi::Tile<D>,
                    std::shared_ptr<pic::wall::Tile<D,S>>
-        >(m, 
+        >(m,
           pyclass_name.c_str(),
           py::multiple_inheritance()
           )
@@ -197,7 +199,7 @@ namespace wall {
 
 //--------------------------------------------------
 // interpolators
-  
+
 template<size_t D>
 using Interpolator3V = pic::Interpolator<D,3>;
 
@@ -289,6 +291,13 @@ void bind_pic(py::module& m_sub)
   py::class_<pic::VayPusher<2,3>>(m_2d, "VayPusher", picpusher2d)
     .def(py::init<>());
 
+  // Velocity-Verlet pusher (needs seperate updates for loc, vel)
+  py::class_<pic::VerletLocPusher<2,3>>(m_2d, "VerletLocPusher", picpusher2d)
+    .def(py::init<>());
+
+  py::class_<pic::VerletVelPusher<2,3>>(m_2d, "VerletVelPusher", picpusher2d)
+    .def(py::init<>());
+
 
   // 3D version
   py::class_< pic::Pusher<3,3>> picpusher3d(m_3d, "Pusher");
@@ -299,7 +308,7 @@ void bind_pic(py::module& m_sub)
   // Boris pusher
   py::class_<pic::BorisPusher<3,3>>(m_3d, "BorisPusher", picpusher3d)
     .def(py::init<>());
-    
+
   // Boris pusher with drag force
   py::class_<pic::BorisPusherDrag<3,3>>(m_3d, "BorisDragPusher", picpusher3d)
     .def_readwrite("drag", &pic::BorisPusherDrag<3,3>::drag)
@@ -308,6 +317,13 @@ void bind_pic(py::module& m_sub)
 
   // Vay
   py::class_<pic::VayPusher<3,3>>(m_3d, "VayPusher", picpusher3d)
+    .def(py::init<>());
+
+  // Velocity-Verlet pusher (needs seperate updates for loc, vel)
+  py::class_<pic::VerletLocPusher<3,3>>(m_3d, "VerletLocPusher", picpusher3d)
+    .def(py::init<>());
+
+  py::class_<pic::VerletVelPusher<3,3>>(m_3d, "VerletVelPusher", picpusher3d)
     .def(py::init<>());
 
 
@@ -335,7 +351,7 @@ void bind_pic(py::module& m_sub)
     .def(py::init<>());
 
   //--------------------------------------------------
-    
+
   // General current depositer interface
   py::class_< pic::Depositer<2,3>, PyDepositer<2> > picdeposit2d(m_2d, "Depositer");
   picdeposit2d
@@ -390,7 +406,7 @@ void bind_pic(py::module& m_sub)
   auto tw4 = pic::wall::declare_tile<2, +2>(m_2d, "Tile_wall_RY");
 
   //--------------------------------------------------
-  // Quick IO 
+  // Quick IO
 
   py::class_<h5io::TestPrtclWriter<2>>(m_2d, "TestPrtclWriter")
     .def(py::init<const std::string&, int, int, int, int, int, int, int, int, int>())

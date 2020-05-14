@@ -1,6 +1,6 @@
 import numpy as np
-from py_runko_aux import *
-from boris import boris_rp
+from pyhack.py_runko_aux import *
+from pyhack.boris import boris_rp
 
 def boris_synced_pos(tile):
     dt = tile.cfl
@@ -20,7 +20,7 @@ def boris_synced_pos(tile):
         vg[:,i] = vel[:,i]*g
         pos[:,i] += dt*vg[:,i]
 
-    pos += dt*dt/2 * (1*E + np.cross(vg,B))
+    pos += dt*dt/2 * cont.q*(E + np.cross(vg,B))
 
     tile.delete_all_particles()
 

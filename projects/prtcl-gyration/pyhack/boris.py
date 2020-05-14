@@ -1,6 +1,7 @@
 import numpy as np
-from py_runko_aux import *
 import time
+from pyhack.py_runko_aux import *
+
 
 def boris_rp(vel, E, B, c, qm, ck=0):
     dims = vel.shape[1]

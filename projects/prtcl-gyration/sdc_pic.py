@@ -7,15 +7,16 @@ import numpy as np
 import sys, os
 import matplotlib.pyplot as plt
 
-from gauss_legendre import CollGaussLegendre
-from gauss_lobatto import CollGaussLobatto
 
 # runko + auxiliary modules
 import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
-from py_runko_aux import *
-from boris_sync import boris_synced_pos, boris_synced_vel
+from pyhack.py_runko_aux import *
+from pyhack.boris_sync import boris_synced_pos, boris_synced_vel
+from pyhack.gauss_legendre import CollGaussLegendre
+from pyhack.gauss_lobatto import CollGaussLobatto
+
 
 # problem specific modules
 np.random.seed(1)

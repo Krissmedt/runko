@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from analytical_gyro import *
+from pyhack.analytical_gyro import *
 
 def py_pos(cont):
     # Retrieve position vectors from particle container and rearrange to numpy Nx3
@@ -77,10 +77,10 @@ def plot_traj(t,x,y,conf,name):
     fig_traj.savefig(name+'_trajectory_{0}.png'.format(conf.Nt))
 
     x_error = abs(xref[-1]-x[-1])/abs(xref[-1])
-    rL1 = (np.max(x[:,0])-np.min(x[:,0]))/2
+    rl1 = (np.max(x[:,0])-np.min(x[:,0]))/2
+    l_error = abs(conf.larmor - rl1)/abs(rl1)
 
-    print(x[-1])
-    print(x_error)
+    print(l_error)
 
 def plot_vel(t,vx,vy,conf,name):
     dummy1,dummy2,vxref,vyref = analytical_gyro_full(t,conf)

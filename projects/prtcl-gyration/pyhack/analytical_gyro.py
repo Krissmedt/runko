@@ -1,5 +1,5 @@
 import numpy as np
-from py_runko_aux import *
+from pyhack.py_runko_aux import *
 
 def analytical_gyro_full(time,conf):
     vxref = []
@@ -9,7 +9,7 @@ def analytical_gyro_full(time,conf):
 
     # Relativistic gyro frequency (cgs): omega_B = qB/(gamma*m*c)
     # Relativistic gyro frequency (runko): omega_B*dt = qh*Bh*/(gamma*mh*ch) * m-/m+
-    lfreq = (conf.qe*conf.binit)/(conf.gamma*abs(conf.qe)*conf.cfl**2)
+    lfreq = (conf.qe*conf.binit)/(conf.gamma*abs(conf.qe)*conf.cfl**2) * conf.gamma
 
     # Phase-lag, particles start at a=0 radians
     a = 0
