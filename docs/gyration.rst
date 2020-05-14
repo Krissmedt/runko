@@ -56,9 +56,9 @@ Complete grid size is then `Ni*NiMesh`, however, this will be overwritten in the
 
 .. math::
 
-   r_l = \frac{\gamma m c v}{qB}
+   r_l = \\frac{\\gamma m c v}{qB}
 
-where the orthogonal velocity :math:`v` will be calculated from the relativestic factor input :math:`\gamma` (see below).
+where the orthogonal velocity :math:`v` will be calculated from the relativestic factor input :math:`\\gamma` (see below).
 
 - [particles]
    - `gamma`: Relativistic factor of the particle, determines speed, increasing the value increases the Larmor radius, and the simulation box must be sized up accordingly.
