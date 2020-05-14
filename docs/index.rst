@@ -41,7 +41,7 @@ The framework consists of various physics modules that can be run independently 
    :caption: Tutorials:
    :maxdepth: 2
    :hidden:
-
+   gyration
    shocks
 
 See also full :ref:`genindex` of the code components.
