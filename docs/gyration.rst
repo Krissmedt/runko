@@ -52,7 +52,13 @@ Additionally, more advanced options include
    - `Nx`, `Ny`, `Nz`: No. of mesh tiles in x,y,z direction, default 1, don't edit.
    - `NxMesh`/`NyMesh`/`NzMesh`: Size of tiles in x,y,z direction
    
-Complete grid size is then `Ni*NiMesh`, note that field value is constant for this simulation and the tile sizes can be used to decide the size of the simulation box.
+Complete grid size is then `Ni*NiMesh`, however, this will be overwritten in the gyration test case with a mesh sized to contain the Larmor gyration of the particle, the radius
+
+.. math::
+
+   r_l = \frac{\gamma m c v}{qB}
+
+where the orthogonal velocity :math:`v` will be calculated from the relativestic factor input :math:`\gamma` (see below).
 
 - [particles]
    - `gamma`: Relativistic factor of the particle, determines speed, increasing the value increases the Larmor radius, and the simulation box must be sized up accordingly.
