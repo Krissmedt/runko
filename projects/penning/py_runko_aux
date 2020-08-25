@@ -1,0 +1,38 @@
+import numpy as np
+
+def py_pos(cont):
+    # Retrieve position vectors from particle container and rearrange to numpy Nx3
+    locx = cont.loc(0)
+    locy = cont.loc(1)
+    locz = cont.loc(2)
+
+    # loc is meant to be passed by reference, but container doesnt change for some reason
+    # locx += dt * vel[:,0]*g
+
+    pos = np.array([locx,locy,locz]).transpose()
+
+    return pos
+
+def py_vel(cont):
+    # Retrieve velocity vectors from particle container and rearrange to numpy Nx3
+    velx = cont.vel(0)
+    vely = cont.vel(1)
+    velz = cont.vel(2)
+    vel = np.array([velx,vely,velz]).transpose()
+
+    return vel
+
+def py_em(cont):
+    # Retrieve EM vectors from particle container and rearrange to numpy Nx3
+    locx = cont.loc(0)
+    nq = len(locx)
+
+    E = np.array([[cont.ex(i),cont.ey(i),cont.ez(i)] for i in range(0,nq)])
+    B = np.array([[cont.bx(i),cont.by(i),cont.bz(i)] for i in range(0,nq)])
+
+    return E,B
+
+
+def ginv(c,v):
+    gamma = c/np.sqrt(c**2 + np.sum(v**2))
+    return gamma

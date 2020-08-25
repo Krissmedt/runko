@@ -1,0 +1,190 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Clusters &#8212; runko  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Runko Unit System and Particle Integration" href="units.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="clusters">
+<h1>Clusters<a class="headerlink" href="#clusters" title="Permalink to this headline">¶</a></h1>
+<p>Runko has been successfully compiled on many different computing clusters. Module loading and environment variable initialization scripts are provided in <cite>archs/</cite> folder.</p>
+<p>As a rule of thumb:</p>
+<ul class="simple">
+<li>Most important thing to look at cluster performance-wise is to check the memory per core.
+- PIC simulations are most often memory limited so this number is the actual limiting factor.</li>
+<li>Second important thing is the inter connector because MPI communications are costly.</li>
+<li>Thirdly, modern Intel CPUs vectorize mesh calculations efficiently and so all the filtering operations are more efficient on them.</li>
+</ul>
+<div class="section" id="rusty">
+<h2>Rusty<a class="headerlink" href="#rusty" title="Permalink to this headline">¶</a></h2>
+<p>Flatiron Institute’s jack-of-all-trades at New York. Heterogeneous cluster:</p>
+<ul class="simple">
+<li>360 nodes = 11500 cores</li>
+<li>240 nodes of 2x14 Broadwell cores = 6700 cores<ul>
+<li>512GB/node (18GB/core)</li>
+</ul>
+</li>
+<li>120 nodes of 2x20 Skylake cores = 4800 cores<ul>
+<li>768GB/node (19.2GB/core)</li>
+</ul>
+</li>
+<li>100GB/s Omnipath</li>
+</ul>
+</div>
+<div class="section" id="beskow">
+<h2>Beskow<a class="headerlink" href="#beskow" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://www.pdc.kth.se/hpc-services/computing-systems/beskow">https://www.pdc.kth.se/hpc-services/computing-systems/beskow</a></p>
+<p>Swedish PDC Cray XC40 machine:</p>
+<ul class="simple">
+<li>11 cabinets = 515 blades = 2,060 compute nodes</li>
+<li>67,456 cores in total, 2 x Intel CPUs per node</li>
+<li>9 cabinets of Xeon E5-2698v3 Haswell 2.3 GHz CPUs (2x16 cores per node),<ul>
+<li>64GB/node (2GB/core)</li>
+</ul>
+</li>
+<li>2 cabinets of Xeon E5-2695v4 Broadwell 2.1 GHz CPUs (2x18 cores per node)<ul>
+<li>128/node (3.6GB/core)</li>
+</ul>
+</li>
+<li>High speed network Cray Aries (Dragonfly topology)</li>
+</ul>
+</div>
+<div class="section" id="kebnekaise">
+<h2>Kebnekaise<a class="headerlink" href="#kebnekaise" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://www.hpc2n.umu.se/resources/hardware/kebnekaise">https://www.hpc2n.umu.se/resources/hardware/kebnekaise</a></p>
+<p>Swedish HPC2N Umeå heterogeneous Lenovo machine:</p>
+<ul class="simple">
+<li>15 racks = 602 nodes</li>
+<li>19,288 cores (of which 2,448 cores are KNL-cores)</li>
+<li>432 nodes of 2x14 Intel Xeon<ul>
+<li>128GB/node (4.6GB/core)</li>
+</ul>
+</li>
+<li>52 nodes of 2x14 Intel Skylake,<ul>
+<li>192GB/node (6.7GB/core)</li>
+</ul>
+</li>
+<li>Infiniband FDR/EDR</li>
+</ul>
+</div>
+<div class="section" id="tegner">
+<h2>Tegner<a class="headerlink" href="#tegner" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://www.pdc.kth.se/hpc-services/computing-systems/tegner-1.737437">https://www.pdc.kth.se/hpc-services/computing-systems/tegner-1.737437</a></p>
+<p>Heterogeneous post-processing cluster for Beskow.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Actual simulation part is not working, only the analysis scripts are functional.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">runko</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Clusters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rusty">Rusty</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#beskow">Beskow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kebnekaise">Kebnekaise</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tegner">Tegner</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Runko Unit System and Particle Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Runko Unit System and Particle Integration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pic.html">Relativistic PIC module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields.html">FDTD fields module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vlv.html">Vlasov module</a></li>
+</ul>
+<p class="caption"><span class="caption-text">APIs:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="APIs/fields.html">Fields module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/pic.html">PIC module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/vlv.html">VLV module API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+      <li>Next: <a href="units.html" title="next chapter">Runko Unit System and Particle Integration</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Kris Smedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/clusters.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

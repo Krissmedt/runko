@@ -1,0 +1,257 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Installation &#8212; runko  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Clusters" href="clusters.html" />
+    <link rel="prev" title="Runko — modern toolbox for plasma simulations" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the basic installation of the framework. See also the <a class="reference internal" href="clusters.html"><span class="doc">Clusters</span></a> page in case you are installing the code to some computing cluster.</p>
+<div class="section" id="downloading-cloning">
+<h2>Downloading/Cloning<a class="headerlink" href="#downloading-cloning" title="Permalink to this headline">¶</a></h2>
+<p>The framework relies on various small (template) libraries that are automatically obtained along the main code as submodules. Because of this, remember to always issue a recursive clone:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --recursive https://github.com/natj/runko.git
+</pre></div>
+</div>
+<p>You also need to update all the submodules (so that other branches are also in sync) with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git submodule update --recursive
+</pre></div>
+</div>
+</div>
+<div class="section" id="external-libraries">
+<h2>External libraries<a class="headerlink" href="#external-libraries" title="Permalink to this headline">¶</a></h2>
+<p>External libraries installed together with the framework include:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/natj/corgi">corgi</a> massively-parallel grid infrastructure</li>
+<li><a class="reference external" href="https://github.com/pybind/pybind11">PyBind11</a> binding library for seamless operability between C++ and Python</li>
+<li><a class="reference external" href="https://github.com/ryanhaining/cppitertools">cppitertools</a> for various python-like C++ iterators etc.</li>
+<li><a class="reference external" href="https://github.com/natj/ezh5">ezh5</a> lazy template interface to HDF5 for easier usage (originally from [mileschen](<a class="reference external" href="https://github.com/mileschen360/ezh5">https://github.com/mileschen360/ezh5</a>))</li>
+<li><a class="reference external" href="https://github.com/natj/mpi4cpp">mpi4cpp</a> high-level interface to MPI library</li>
+</ul>
+</div>
+<div class="section" id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>Before proceeding to compilation, check that your system has these requirements installed:</p>
+<ul class="simple">
+<li>Modern C++ compiler (such as <a class="reference external" href="https://clang.llvm.org/">Clang++</a>, g++, …)</li>
+<li>python3 (with mpi4py)</li>
+<li><a class="reference external" href="https://support.hdfgroup.org/HDF5/">HDF5</a> for I/O (serial mode is enough)</li>
+<li><a class="reference external" href="https://cmake.org/">CMake</a> (&gt;v3.0) for building and compiling</li>
+<li><a class="reference external" href="http://www.fftw.org/">FFTW</a> for Fourier transforms</li>
+<li>MPI message passing interface</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that g++-8 does not work because of a (known) compiler bug. Therefore, g++-9 is the current recommended choice.</p>
+</div>
+<div class="section" id="macos">
+<h3>MacOS<a class="headerlink" href="#macos" title="Permalink to this headline">¶</a></h3>
+<p>On MacOS these are easily installed with <a class="reference external" href="https://brew.sh/">homebrew</a> by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brew install gcc hdf5 python3 open-mpi cmake fftw fmt
+</pre></div>
+</div>
+<p>MPI needs to be compiled separately because, by default, it uses the AppleClang compiler (instead of the g++-9 just installed).</p>
+<p>Compiling e.g., OpenMPI can be done fully via the terminal by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">MPI_IMPL</span><span class="o">=</span>openmpi40
+mkdir <span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span>/bin
+<span class="nb">cd</span> <span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span>/bin
+mkdir -p openmpi <span class="o">&amp;&amp;</span> <span class="nb">cd</span> openmpi
+wget --no-check-certificate http://www.open-mpi.org/software/ompi/v4.0/downloads/openmpi-4.0.0.tar.bz2
+tar -xjf openmpi-4.0.0.tar.bz2
+<span class="nb">cd</span> openmpi-4.0.0
+<span class="nb">export</span> <span class="nv">OMPI_CC</span><span class="o">=</span>gcc-9
+<span class="nb">export</span> <span class="nv">OMPI_CXX</span><span class="o">=</span>g++-9
+./configure <span class="nv">CC</span><span class="o">=</span>gcc-9 <span class="nv">CXX</span><span class="o">=</span>g++-9 --prefix<span class="o">=</span><span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span> &gt; /dev/null <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+make -j <span class="m">4</span> &gt; /dev/null <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+make install &gt; /dev/null <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+make clean &gt; /dev/null <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+<span class="nb">cd</span> ../../
+
+<span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span>/bin
+<span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span>/include
+<span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:<span class="nv">$HOME</span>/local/<span class="nv">$MPI_IMPL</span>/lib
+</pre></div>
+</div>
+<p>This installs OpenMPI 4.0 to <cite>~/bin</cite> and exports the correct directories so that <cite>mpic++</cite> compiler wrapper becomes available. You should put the last 3 export commands to your <cite>.bash_profile</cite> for easier usage, in case you need to recompile Runko at some point.</p>
+</div>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<p>On Linux (assuming Ubuntu) run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo -E apt-add-repository -y <span class="s2">&quot;ppa:ubuntu-toolchain-r/test&quot;</span>
+sudo apt-get install libopenmpi-dev libhdf5-serial-dev hdf5-helpers openmpi-bin libblas-dev liblapack-dev python3 python3-pip
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Recent Ubuntu (bionic) comes with gcc-7 which makes the installation easier. For previous versions you, additionally, need to install gcc-7 (or 9) and manually compile MPI similar to the MacOS discussed above.</p>
+</div>
+<p>You also need to export the HDF5 library location (since it is non-standard at least in Ubuntu) with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">HDF5_INCLUDE_PATH</span><span class="o">=</span>/usr/include/hdf5/serial
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="python-libraries">
+<h2>Python libraries<a class="headerlink" href="#python-libraries" title="Permalink to this headline">¶</a></h2>
+<p>All the python requirements can be installed via <cite>pip</cite> as</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip3 install -r requirements.txt
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you had to manually install MPI in the previous section, then you need to remove mpi4py (<cite>pip3 uninstall mpi4py</cite>) and re-install it.</p>
+</div>
+</div>
+<div class="section" id="compiling">
+<h2>Compiling<a class="headerlink" href="#compiling" title="Permalink to this headline">¶</a></h2>
+<p>After installing all the pre-requisites, you can proceed to compiling. First you need to configure the build. To use your (freshly installed) modern C++ compiler we need to export them as</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">CC</span><span class="o">=</span>mpicc
+<span class="nb">export</span> <span class="nv">CXX</span><span class="o">=</span>mpic++
+</pre></div>
+</div>
+<p>Then make sure that everything works, check the output of</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">$CC</span> --version
+<span class="nv">$CXX</span> --version
+</pre></div>
+</div>
+<p>This should indicate that the newly installed compilers are used.</p>
+<p>You should also put this part into your <cite>~/.bashrc</cite> (or <cite>~/.bash_profile</cite> on MacOS) so correct compilers are automatically exported in the startup.</p>
+<p>You should also add the python script directories into <cite>PYTHONPATH</cite> environment variable. Modify your <cite>~/.bash_profile</cite> (MacOS) or <cite>~/.bashrc</cite> (Linux) by appending <cite>corgi</cite> and <cite>runko</cite> libraries to the path by exporting</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">RUNKO</span><span class="o">=</span>/path2repo
+<span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:<span class="nv">$RUNKO</span>
+<span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:<span class="nv">$RUNKO</span>/lib
+<span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:<span class="nv">$RUNKO</span>/corgi/lib
+<span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:<span class="nv">$RUNKO</span>/bindings/old
+</pre></div>
+</div>
+<p>where <cite>path2repo</cite> points to the location where you cloned the repository (i.e. path to <cite>runko</cite> directory). Note that there is no trailing slash <cite>/</cite>. As an example, the path can be e.g., <cite>/Users/natj/runko</cite>.</p>
+<p>Next we can proceed to compiling. Out-of-source builds are recommended so inside the repository make a new build directory, go into that and only then run the CMake. This can be done by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir build
+<span class="nb">cd</span> build
+cmake ..
+</pre></div>
+</div>
+<p>And make sure to check that <cite>CMake</cite> finishes successfully. After that, you are ready to compile the framework with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make
+</pre></div>
+</div>
+<p>When compiling and linking is finished, CMake runs few automated tests to check that everything is working. You should see a message <em>“XX tests finished succesfully”</em> in the end, if the build was successful.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Since the compiling can take quite a while, you can use the multi-core compilation by passing make the <cite>-j8</cite> option (or whatever number of tasks you want).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">runko</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#downloading-cloning">Downloading/Cloning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#external-libraries">External libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-libraries">Python libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compiling">Compiling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Runko Unit System and Particle Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Runko Unit System and Particle Integration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pic.html">Relativistic PIC module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields.html">FDTD fields module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vlv.html">Vlasov module</a></li>
+</ul>
+<p class="caption"><span class="caption-text">APIs:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="APIs/fields.html">Fields module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/pic.html">PIC module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/vlv.html">VLV module API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Runko — modern toolbox for plasma simulations</a></li>
+      <li>Next: <a href="clusters.html" title="next chapter">Clusters</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Kris Smedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

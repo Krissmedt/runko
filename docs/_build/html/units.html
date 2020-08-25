@@ -1,0 +1,521 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Runko Unit System and Particle Integration &#8212; runko  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Runko Unit System and Particle Integration" href="test.html" />
+    <link rel="prev" title="Clusters" href="clusters.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="runko-unit-system-and-particle-integration">
+<h1>Runko Unit System and Particle Integration<a class="headerlink" href="#runko-unit-system-and-particle-integration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>For an arbitrary system of units, the Maxwell equations can be written,</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>nablacdotmathbf{E}=4pi k_{1}rho,</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{partialmathbf{E}}{partial t}=frac{c{{}^2}}{k_{2}}nablatimesmathbf{B}-4pi k_{1}mathbf{J},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>nablacdotmathbf{B}=0,</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{partialmathbf{B}}{partial t}=-k_{2}nablatimesmathbf{E},</p>
+<p>where <span class="math notranslate nohighlight">\(k_{1}\)</span> and <span class="math notranslate nohighlight">\(k_{2}\)</span> are constants corresponding to a given
+unit system (cite jackson). For CGS (Gaussian) units, the constants
+default to <span class="math notranslate nohighlight">\(k_{1}=1\)</span> and <span class="math notranslate nohighlight">\(k_{2}=c\)</span></p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>nablacdotmathbf{E}=4pirho,</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{partialmathbf{E}}{partial t}=cnablatimesmathbf{B}-4pimathbf{J},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>nablacdotmathbf{B}=0,</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{partialmathbf{B}}{partial t}=-cnablatimesmathbf{E},</p>
+<p>with the corresponding Lorentz acceleration</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{dmathbf{u}}{dt}=frac{q}{m}mathbf{E}+frac{mathbf{v}}{c}timesmathbf{B}.</p>
+<p>The unit system in runko follows the convention used in the PIC code
+TRISTAN-MP (Buneman 1993).
+The variables are normalised w.r.t. appropriate
+fiducial values. The most noteworthy scalings are those for time and
+distance, which are normalised w.r.t. the grid spacing <span class="math notranslate nohighlight">\(\mathbf{x}=\hat{\mathbf{x}}\Delta x\)</span>
+and time-step <span class="math notranslate nohighlight">\(t=\hat{t}\Delta t\)</span>. As velocity is the derivative
+of time with distance, it follows that the system velocity is expressed
+in terms of the spatial and temporal step sizes. The coordinate/proper
+velocity is given by</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{v}=frac{dmathbf{x}}{dt}=frac{dhat{mathbf{x}}}{dhat{t}}frac{Delta x}{Delta t}=hat{mathbf{v}}frac{Delta x}{Delta t},</p>
+<p>with the corresponding four-velocity</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}=hat{mathbf{u}}frac{Delta x}{Delta t}=hat{mathbf{v}}gamma(mathbf{v})frac{Delta x}{Delta t}.</p>
+<p>To maintain stability and ensure the fidelity of the simulation, the
+fraction <span class="math notranslate nohighlight">\(\Delta x/\Delta t\)</span> is set to equal <span class="math notranslate nohighlight">\(c\)</span> normalised as before
+so that <span class="math notranslate nohighlight">\(\Delta x/\Delta t=c/\hat{c}\)</span>. In this manner, effective
+light speed can be set in the simulation via <span class="math notranslate nohighlight">\(\hat{c}\)</span> and the CFL
+condition strictly enforced at all times.
+In all the formulas solved by the computer the <span class="math notranslate nohighlight">\(\hat{c}\)</span> ends up playing the role of a time-step because it effectively reduces maximum signal velocity (i.e., speed of light) so that <span class="math notranslate nohighlight">\(\Delta t = c \Delta x \hat{c}\)</span>.
+Setting grid size and light speed to unity, <span class="math notranslate nohighlight">\(\Delta x = 1\)</span> and <span class="math notranslate nohighlight">\(c = 1\)</span>, the definition reduces to <span class="math notranslate nohighlight">\(\hat{c} = \Delta t\)</span>.</p>
+<p>The fields are scaled via the fiducial value <span class="math notranslate nohighlight">\(B_{0}\)</span>, so <span class="math notranslate nohighlight">\(\mathbf{E}=\hat{\mathbf{E}}B_{0}\)</span>
+and <span class="math notranslate nohighlight">\(\mathbf{B}=\hat{\mathbf{B}}B_{0}\)</span>. Charge, mass and current
+are similarly scaled, giving <span class="math notranslate nohighlight">\(q=\hat{q}q_{0}\)</span>, <span class="math notranslate nohighlight">\(m=\hat{m}m_{0}\)</span>
+and :math:<a href="#id1"><span class="problematic" id="id2">`</span></a>mathbf{J}=hat{mathbf{J}}J_{0}`where all numerical variables
+are denoted with a hat.</p>
+<p>Applying these conventions to the evolution equations, which are needed
+to advance the PIC system, the runko update equations take the following
+form in code units</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta[hat{mathbf{E}}]_{t}=cfrac{Delta t}{Delta x}Delta[hat{mathbf{B}}]_{x}-frac{4pi J_{0}}{B_{0}}Delta that{mathbf{J}}=hat{c}Delta[hat{mathbf{B}}]_{x}-hat{mathbf{J}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta[hat{mathbf{B}}]_{t}=-cfrac{Delta t}{Delta x}Delta[hat{mathbf{E}}]_{x}=-hat{c}Delta[hat{mathbf{E}}]_{x},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta[hat{mathbf{u}}]_{t}=frac{hat{q}q_{0}hat{c}}{hat{m}m_{0}c}B_{0}Delta tleft(hat{mathbf{E}}+frac{hat{mathbf{v}}c}{chat{c}}timeshat{mathbf{B}}right)=frac{hat{q}}{hat{m}}left(hat{mathbf{E}}+frac{hat{mathbf{v}}}{hat{c}}timeshat{mathbf{B}}right),</p>
+<p>Note here for the velocity update that <span class="math notranslate nohighlight">\(\Delta[\hat{\mathbf{u}}]_{t}\)</span>
+is a numerical expression for acceleration and is thus scaled using
+<cite>Delta x/Delta t^{2}</cite>, which is changed to <span class="math notranslate nohighlight">\(\Delta tc/\hat{c}\)</span>
+and multiplied to the right hand side. The update equation for position
+is defined by the integral of proper velocity <span class="math notranslate nohighlight">\(\hat{\mathbf{v}}\)</span>, which takes the following form once scalings are introduced</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta[hat{mathbf{x}}]_{t}=frac{Delta t}{Delta x}frac{hat{mathbf{u}}}{gamma(hat{mathbf{u}})}frac{Delta x}{Delta t}=frac{hat{mathbf{u}}}{gamma(hat{mathbf{u}})}.</p>
+<p>In all equations above, <span class="math notranslate nohighlight">\(\Delta[\cdot]_{t}\)</span> and <span class="math notranslate nohighlight">\(\Delta[\cdot]_{x}\)</span> indicate
+an appropriate finite difference operator of form <span class="math notranslate nohighlight">\(x_{n+1}-x_{n}\)</span> or <span class="math notranslate nohighlight">\(t_{n+1/2}-t_{n-1/2}\)</span>. Note the missing step sizing due to the normalisation of the system.
+To simplify the equations, the following ratios between the different fiducial values were defined:</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>B_{0}=frac{m_{0}c}{q_{0}hat{c}Delta t}=frac{m_{0}c}{q_{0}hat{c}}left(frac{c}{hat{c}Delta x}right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{J_{0}}{B_{0}}=frac{1}{4piDelta t},</p>
+<p>which effectively make eqs. (ref{eq:ampere_updateE}) - (ref{eq:lorentz_update}) unitless. The current is then scaled as</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{J}=J_{0}hat{mathbf{J}}=hat{q}frac{q_{0}}{Delta x^{3}}hat{mathbf{v}}frac{Delta x}{Delta t}=hat{q}hat{mathbf{v}}frac{q_{0}}{Delta x^{2}Delta t},</p>
+<p>which implies <span class="math notranslate nohighlight">\(J_{0}=q_{0}/\Delta x^{2}\Delta t\)</span>. The formula for <span class="math notranslate nohighlight">\(J\)</span> can be thus be understood as a charge flux through a surface area of size <span class="math notranslate nohighlight">\(\Delta x^2\)</span>. Substituting in the values for <span class="math notranslate nohighlight">\(J_{0}=q_{0}/\Delta x^{2}\Delta t\)</span> yields</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{q_{0}}{Delta x^{2}}=frac{m_{0}c}{4pi q_{0}hat{c}Delta t},</p>
+<p>which can be rearranged for :math:<a href="#id3"><span class="problematic" id="id4">`</span></a>Delta x`to form</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta x=4pifrac{q_{0}^{2}}{m_{0}}left(frac{hat{c}}{c}right)^{2},</p>
+<p>using the substitution <span class="math notranslate nohighlight">\(\Delta x/\Delta t=c/\hat{c}.\)</span></p>
+<p>The particles simulated in PIC generally do not correspond to physical particles. Instead they represent groups/clusters of physical particles traveling together with same velocity and direction. These “macroparticles” thus allows the model to simulate a plasma of a given mass, charge and size without 1:1 resolution of the physical particles.
+For a macroparticle containing <span class="math notranslate nohighlight">\(N\)</span> electrons/positrons, the reference charge will equal <span class="math notranslate nohighlight">\(q_{0}=Nq_{e}\)</span> and the expression becomes</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta x=4pi Nfrac{q_{e}^{2}}{m_{e}}left(frac{hat{c}}{c}right)^{2}=4pi Nhat{c}^{2}r_{e},</p>
+<p>where <span class="math notranslate nohighlight">\(m_{e}\)</span>, <span class="math notranslate nohighlight">\(q_{e}=e\)</span> are the electron rest mass and elementary
+charge respectively, resulting in the appearance of the classical
+electron radius <span class="math notranslate nohighlight">\(r_{e}=e^{2}/m_{e}c^{2}\approx2.82\cdot10^{-13}\)</span>.
+The field scaling in Gaussian units then becomes</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>B_{0}=frac{m_{e}c}{ehat{c}}left(frac{c}{hat{c}Delta x}right)=frac{e}{r_{e}hat{c}^{2}Delta x}.</p>
+<p>Converting from code to Gaussian units now just requires selecting a grid length scale <span class="math notranslate nohighlight">\(\Delta x\)</span></p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{B}=hat{mathbf{B}}B_{0}=1.705cdot10^{3}frac{hat{mathbf{B}}}{hat{c}^{2}},frac{1,mathrm{cm}}{Delta x}mathrm{G},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{E}=hat{mathbf{E}}B_{0}=1.705cdot10^{3}frac{hat{mathbf{E}}}{hat{c}^{2}},frac{1,mathrm{cm}}{Delta x}mathrm{statvolt,cm^{-1}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{J}=frac{B_{0}}{4piDelta t}hat{mathbf{J}}=frac{ec}{4pi r_{e}hat{c}{{}^3}Delta x{{}^2}}hat{mathbf{J}}approx4.056cdot10^{12}frac{hat{mathbf{J}}}{hat{c}{{}^3}},left(frac{1,mathrm{cm}}{Delta x}right)^{2},mathrm{statcoul,s^{-1}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>q=hat{q}frac{eDelta x}{4pihat{c}^{2}r_{e}}approx1.356cdot10^{2}frac{hat{q}}{hat{c}^{2}},frac{Delta x}{1,mathrm{cm}},mathrm{statcoul},</p>
+<p>Using the above fundamental scalings, expressions for the conversion
+of the derived plasma quantities from code units can also be determined.
+The relativistic plasma frequency is given by</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{p}^{2}=omega_{p,-}^{2}+omega_{p,+}^{2}=frac{4pi q^{2}n}{&lt;gamma&gt;m_{e}}left(1+frac{m_{-}}{m_{+}}right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>hat{omega}_{p}^{2}=omega_{p}^{2}Delta t^{2}=frac{hat{q}^{2}N_{ppc}}{langle gamma langle hat{m}}left(1+frac{m_{-}}{m_{+}}right)=frac{&gt;|hat{q}|N_{ppc}}{&lt;gamma&gt;}left(1+frac{m_{-}}{m_{+}}right),</p>
+<p>for a 2-species plasma with <span class="math notranslate nohighlight">\(+\)</span> and <span class="math notranslate nohighlight">\(-\)</span> particles and masses <span class="math notranslate nohighlight">\(m_-\)</span> and <span class="math notranslate nohighlight">\(m_+\)</span>. In the case of electron-positron pair plasma <span class="math notranslate nohighlight">\(m_- = m_+\)</span>, but for ions a mass scale <span class="math notranslate nohighlight">\(m_+/m_-\)</span> is requiredthat in a real plasma is <span class="math notranslate nohighlight">\(m_i/m_e\)</span>. The parameter :math:<a href="#id5"><span class="problematic" id="id6">`</span></a>N_{ppc}`denotes the number of particles per cell per species.</p>
+<p>The numerical plasma frequency can then be set by selecting a skin depth resolution</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>R_p = frac{c/omega_p}{Delta x},</p>
+<p>which expresses the length of a plasma oscillation at velocity :math:´c´ non-dimensionalised w.r.t. the grid length.</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>hat{omega}_{p,0}=frac{hat{c}Delta x}{R_{p}Delta x}=frac{hat{c}}{R_{p}}.</p>
+<p>By requiring that <span class="math notranslate nohighlight">\(\Delta t=\hat{\omega}_{p,0}^{-1}\)</span>, the electron
+charge and mass can be fixed and calculated via</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p><a href="#id7"><span class="problematic" id="id8">|</span></a>hat{q}|=frac{hat{omega}_{p,0}^{2}&lt;gamma&gt;}{N_{ppc}left(1+frac{m_{-}}{m_{+}}right)}.</p>
+<p>The effect of this selection is that a plasma with the fiducial density <span class="math notranslate nohighlight">\(n_0\)</span>, is always resolved numerically.
+The skin depth is resolved by <span class="math notranslate nohighlight">\(R_p\)</span> cells and the plasma oscillation time with <span class="math notranslate nohighlight">\(1/\hat{c}\)</span> time steps.</p>
+<p>Moving on to the relativistic cyclotron frequency for a given species</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{B}=frac{qB}{mcgamma},</p>
+<p>to which the corresponding expression in code units can be found by
+substitution with the appropriate scalings, e.g. <span class="math notranslate nohighlight">\(B=B_{0}\hat{B}\)</span>.
+This gives</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{B}=frac{hat{q}q_{0}}{hat{m}m_{0}cgamma}frac{m_{0}c}{q_{0}hat{c}Delta t}hat{B},</p>
+<p>which cancels out and simplifies to</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{B}Delta t=frac{hat{q}hat{B}}{hat{m}hat{c}gamma}frac{m_{-}}{m_{+}},</p>
+<p>where <span class="math notranslate nohighlight">\(\hat{m}\frac{m_{-}}{m_{+}}\)</span> for protons).
+Substituting for <span class="math notranslate nohighlight">\(\Delta t\)</span> yields an expression for code unit cyclotron
+frequency at any given scale <span class="math notranslate nohighlight">\(\Delta x\)</span> and <span class="math notranslate nohighlight">\(c\)</span></p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{B}frac{Delta xhat{c}}{c}=frac{hat{q}hat{B}}{hat{m}hat{c}gamma}frac{m_{-}}{m_{+}},</p>
+<p>For the standard case where grid spacing and light speed are set to
+one, the cyclotron frequency for the simulation can be calculated
+via</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>omega_{B}=frac{hat{q}hat{B}}{hat{m}hat{c}^{2}gamma}frac{m_{-}}{m_{+}},</p>
+<p>Finally, the total plasma magnetization in Gaussian vs. code units
+become</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>sigma=frac{B^{2}}{4pi nm_{e}c{{}^2}&lt;gamma&gt;}=left(frac{omega_{B}}{omega_{p}}right)^{2}=frac{hat{B}^{2}}{N_{ppc}hat{m}hat{c}^{2}&lt;gamma&gt;}left(1+frac{m_{-}}{m_{+}}right)^{-1}.</p>
+<p>A given set of equations can be converted into the runko unit system using the scalings and definitions outlined above. In general, the choice of scalings, length and time scale will have terms cancelling out neatly and an expression will change from Gaussian units in the following ways when converting:</p>
+<blockquote>
+<div><ol class="lowerroman simple">
+<li>Remove <span class="math notranslate nohighlight">\(4\pi\)</span> Gaussian unit EM factors,</li>
+<li>Substitute physical variables with code versions, i.e. <span class="math notranslate nohighlight">\(x\rightarrow \hat{x}\)</span> and so on,</li>
+<li>Cancel out factors of <span class="math notranslate nohighlight">\(q_e/m_e\)</span> since in this unit system <span class="math notranslate nohighlight">\(|\hat{q}| = \hat{m}\)</span>.</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="leapfrog-boris-in-runko">
+<h2>Leapfrog Boris in Runko<a class="headerlink" href="#leapfrog-boris-in-runko" title="Permalink to this headline">¶</a></h2>
+<p>The form of the relativistic Boris integrator must be changed to match
+the unit system outlined above. Starting from the differenced version
+of the Lorentz acceleration in code units (ref{eq:lorentz_update})
+for a particle with four-velocity <span class="math notranslate nohighlight">\(\mathbf{u}(t^{n})=\mathbf{u}^{n}\)</span></p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>Delta[mathbf{u}^{n}]=frac{hat{q}}{hat{m}}left(hat{mathbf{E}}+frac{hat{mathbf{v}}}{hat{c}}timeshat{mathbf{B}}right).</p>
+<p>The four-velocity <span class="math notranslate nohighlight">\(\mathbf{u}^{n}\)</span> of is defined in units of <span class="math notranslate nohighlight">\(c\)</span>
+in runko to facilitate typical desired analysis, which require velocity
+in these units. As the equations above define velocity in units of
+<cite>hat{c}</cite>, the velocity as tracked by runko must be translated to
+and from these units for all calculations involving velocity. Velocities
+with units of <span class="math notranslate nohighlight">\(\hat{c}\)</span> rather than <span class="math notranslate nohighlight">\(c\)</span> will be marked with primes,
+and the conversion is simply a multiplication by <span class="math notranslate nohighlight">\(\hat{c}\)</span>, so that
+we have <span class="math notranslate nohighlight">\(\mathbf{u}_{0}^{'}=\hat{c}\mathbf{u}^{n}\)</span>.</p>
+<p>The first half of the electric field acceleration then take a form
+similar to the standard formulation of Boris</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}_{1}^{‘}=hat{c}mathbf{u}_{0}+frac{1}{2}hat{s}hat{mathbf{E}},</p>
+<p>but note the lack of an explicit time-step which has been cancelled
+out by the choice of field scaling <span class="math notranslate nohighlight">\(B_{0}\)</span>.
+Here</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>hat{s}=frac{hat{q}}{hat{m}_{s}m_{pm}}=frac{mathrm{sign}{hat{q}_{0}}}{m_{pm}},</p>
+<p>where <span class="math notranslate nohighlight">\(m_{\pm}=m/m_{e}\)</span> is the particle mass in units of the electron rest mass. The Lorentz factor corresponding to the four-velocity <span class="math notranslate nohighlight">\(\mathbf{u}_{1}^{'}\)</span> with units of <span class="math notranslate nohighlight">\(\hat{c}\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>gamma_{1}=frac{sqrt{hat{c}^{2}+mathbf{u}_{1}^{‘2}}}{hat{c}}=sqrt{1+mathbf{u}_{1}^{‘2}/hat{c}}.</p>
+<p>Proceeding, the first magnetic half-rotation takes the form</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}_{2}=mathbf{u}_{1}^{‘}f+hat{s}frac{mathbf{u}_{1}^{‘}}{hat{c}gamma}timesfrac{1}{2}hat{mathbf{B}}f,</p>
+<p>with</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>f=frac{2}{1+left(frac{hat{mathbf{B}}}{2hat{c}gamma_{1}}right)^{2}}.</p>
+<p>For the final step, the last half rotation and acceleration from both
+magnetic and electric fields can be combined to determine the final
+velocity</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u’}_{3}=mathbf{u’}_{1}+hat{s}frac{mathbf{u’}_{2}}{hat{c}gamma}timesfrac{1}{2}hat{mathbf{B}}+frac{1}{2}hat{s}hat{mathbf{E}},</p>
+<p>translating to units of <span class="math notranslate nohighlight">\(c\)</span> then gives the updated four-velocity
+at time <span class="math notranslate nohighlight">\(t^{n+1}\)</span></p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1}=frac{mathbf{u’}_{3}}{hat{c}}.</p>
+<p>With velocity known, the position update takes the form</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{x}^{n+1}=mathbf{x}^{n}+frac{hat{c}mathbf{u}^{n}}{gamma(hat{c}mathbf{u}^{n})},</p>
+<p>where position and velocity are staggered in time so that <span class="math notranslate nohighlight">\(\mathbf{u}^{n+1}\)</span>
+coincides with <span class="math notranslate nohighlight">\(\mathbf{x}^{n+1/2}\)</span>. Note again the translation of
+<span class="math notranslate nohighlight">\(\mathbf{u}^{n}\)</span> from units of <span class="math notranslate nohighlight">\(c\)</span> to units of <span class="math notranslate nohighlight">\(\hat{c}\)</span>.</p>
+</div>
+<div class="section" id="relativistic-velocity-verlet">
+<h2>Relativistic Velocity-Verlet<a class="headerlink" href="#relativistic-velocity-verlet" title="Permalink to this headline">¶</a></h2>
+<p>As an alternative to leapfrog integration, Velocity-Verlet can be
+defined for relativistic particle motion. In velocity-Verlet, both
+velocity and position are defined at the integer time-steps. Concurrent
+velocity/position can simplify simulation setup as well as data handling,
+since the half-step staggering of velocity need not be accounted for.
+This is particularly important when comparing simulations of varying
+time-step.</p>
+<p>Starting again from relativistic Newton-Lorentz system</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{dmathbf{x}}{dt}=mathbf{v}=mathbf{frac{u}{gamma}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mfrac{dmathbf{u}}{dt}=mfrac{dgammamathbf{v}}{dt}=mathbf{F}(mathbf{x},mathbf{v}),</p>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{F}(mathbf{x},mathbf{v})=qleft(mathbf{E}(mathbf{x})+frac{mathbf{v}}{c}timesmathbf{B}(mathbf{x})right)=qleft(mathbf{E}(mathbf{x})+frac{mathbf{u}}{cgamma}timesmathbf{B}(mathbf{x})right),</p>
+<p>and the relativistic factor is given by</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>gamma=sqrt{frac{1}{1-(mathbf{v}/c)^{2}}}=sqrt{1+left(frac{mathbf{u}}{c}right)^{2}}.</p>
+<p>To achieve second order convergence accuracy like in Leapfrog, centre-difference
+estimates of velocity and acceleration are applied and contracted
+to one time-step length giving</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{mathbf{u}^{n+1/2}}{gamma^{n+1/2}}=frac{mathbf{x}^{n+1}-mathbf{x}^{n}}{Delta t},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{1}{m}mathbf{F}(mathbf{x}^{n+1/2},mathbf{v}^{n+1/2})=frac{mathbf{u}^{n+1}-mathbf{u}^{n}}{Delta t},</p>
+<p>Rearranging these into update form for position and velocity yields</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{x}^{n+1}=mathbf{x}^{n}+Delta tfrac{mathbf{u}^{n+1/2}}{gamma^{n+1/2}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1}=mathbf{u}^{n}+Delta tfrac{1}{m}mathbf{F}(mathbf{x}^{n+1/2},frac{mathbf{u}^{n+1/2}}{gamma^{n+1/2}}).</p>
+<p>The half-step velocity at <span class="math notranslate nohighlight">\(t^{n+1/2}\)</span> in the position update can
+be estimated by half an explicit Euler step of (ref{eq:lorentz_rel})</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>frac{mathbf{u}^{n+1/2}-mathbf{u}^{n}}{frac{1}{2}Delta t}=frac{1}{m}mathbf{F}(mathbf{x}^{n},frac{mathbf{u}^{n}}{gamma^{n}}),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}=mathbf{u}^{n}+frac{Delta t}{2}frac{1}{m}mathbf{F}(mathbf{x}^{n},frac{mathbf{u}^{n}}{gamma^{n}}),</p>
+<p>The final system to be solved in cgs units is then is then</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}=mathbf{u}^{n}+frac{Delta t}{2}mathbf{F}(mathbf{x}^{n},frac{mathbf{u}^{n}}{gamma^{n}}),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{x}^{n+1}=mathbf{x}^{n}+Delta tfrac{mathbf{u}^{n+1/2}}{gamma^{n+1/2}},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1}=mathbf{u}^{n}+frac{Delta t}{2}left(mathbf{F}(mathbf{x}^{n},frac{mathbf{u}^{n}}{gamma^{n}})+mathbf{F}(mathbf{x}^{n+1},frac{mathbf{u}^{n+1}}{gamma^{n+1}})right),</p>
+<p>where all relativistic factors can be calculated using the corresponding
+four-velocity and (). Note how the mass term has been absorbed by
+<cite>mathbf{F}</cite> to form the acceleration function</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{F}(mathbf{x},frac{mathbf{u}}{gamma})=frac{q}{m}left(mathbf{E}(mathbf{x})+frac{mathbf{u}}{cgamma}timesmathbf{B}(mathbf{x})right).</p>
+<p>The velocity update (ref{eq:relvv_u}) is of the same form as in
+leapfrog and can be solved explicitly using the Boris algorithm.</p>
+</div>
+<div class="section" id="relativistic-velocity-verlet-in-runko">
+<h2>Relativistic Velocity-Verlet in runko<a class="headerlink" href="#relativistic-velocity-verlet-in-runko" title="Permalink to this headline">¶</a></h2>
+<p>In the section on leapfrog integration in runko above, the Boris algorithm
+was derived for the specific case where runko scaling is in use. For
+simple update equations however, there is no need to re-derive the
+equations from the ground up using the correctly scaled variables.
+As a worked example, the relativistic velocity-Verlet integrator will
+be scaled for runko implementation below. Note that the unit-change
+from <span class="math notranslate nohighlight">\(c\)</span> to <span class="math notranslate nohighlight">\(\hat{c}\)</span> of velocity will be omitted, as these are
+specific to the storage scheme rather than scaling. To implement the
+equations derived below, the velocities must simply be multiplied/divided
+by <span class="math notranslate nohighlight">\(\hat{c}\)</span> when retrieved and written to memory respectively.</p>
+<p>To provide further context on the consequences of the normalisation
+scheme used, it will also be demonstrated how the effective time-step
+can be varied despite time-step being used to normalise the scheme.</p>
+<p>Substituting runko scalings into the relativistic velocity-verlet
+equations (ref{eq:relvv_uhalf})-(ref{eq:relvv_u}) gives</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}frac{text{ensuremath{Delta x}}}{Delta t}=mathbf{u}^{n}frac{text{ensuremath{Delta x}}}{Delta t}+frac{k_{Delta t}Delta t}{2}mathbf{F}(mathbf{hat{x}}^{n}Delta x,frac{mathbf{hat{u}}^{n}}{gamma^{n}}frac{Delta x}{Delta t}),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{x}}^{n+1}text{ensuremath{Delta x}}=mathbf{hat{x}}^{n}text{ensuremath{Delta x}}+k_{Delta t}Delta tfrac{mathbf{hat{u}}^{n+1/2}}{gamma^{n+1/2}}frac{text{ensuremath{Delta x}}}{Delta t},</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{u}}^{n+1}frac{Delta x}{Delta t}=mathbf{hat{u}}^{n}frac{Delta x}{Delta t}+frac{k_{Delta t}Delta t}{2}left(mathbf{F}(mathbf{hat{x}}^{n}Delta x,frac{mathbf{hat{u}}^{n}}{gamma^{n}}frac{Delta x}{Delta t})+mathbf{F}(mathbf{hat{x}}^{n+1}Delta x,frac{mathbf{hat{u}}^{n+1}}{gamma^{n+1}}frac{Delta x}{Delta t})right).</p>
+<p>The trick here is to recognise the difference between <span class="math notranslate nohighlight">\(\Delta t\)</span>
+as used to set the size of the time-step versus where it is used to
+normalise the scheme. In the former case, time-step is rewritten as
+a non-dimensional scale <span class="math notranslate nohighlight">\(k_{\Delta t}\)</span> multiplied by the scaling
+time-step <span class="math notranslate nohighlight">\(\Delta t\)</span>. Carrying the factor <span class="math notranslate nohighlight">\(k_{\Delta t}\)</span> through
+the normalisation process allows simulations of varying effective
+time-step to be performed for the same physical setup. The effective
+time-step <span class="math notranslate nohighlight">\(k_{\Delta t}\)</span> becomes a factor of a common normalisation
+time-step <span class="math notranslate nohighlight">\(\Delta t\)</span> between simulations. When <span class="math notranslate nohighlight">\(k_{\Delta t}=1\)</span>
+the simulation corresponds to standard runko red{notation}. The same physics can
+now be studied for varying temporal resolutions, by changing the number
+of time-steps and ensuring a reciprocal change in effective time-step
+<cite>k_{Delta t}</cite>. For instance, when the number of time-steps is doubled,
+the effective time-step must be halved.</p>
+<p>Continuing the scaling process, expanding out :math:<a href="#id9"><span class="problematic" id="id10">`</span></a>mathbf{F}`in velocity
+half-step gives</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}frac{text{ensuremath{Delta x}}}{Delta t}=mathbf{u}^{n}frac{text{ensuremath{Delta x}}}{Delta t}+frac{k_{Delta t}Delta t}{2}frac{q_{0}hat{q}}{m_{0}hat{m}}B_{0}left(mathbf{hat{E}}^{n}+frac{mathbf{hat{u}}^{n}}{cgamma^{n}}frac{Delta x}{Delta t}timeshat{mathbf{B}}^{n}right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}=mathbf{u}^{n}+frac{text{ensuremath{Delta t}}}{Delta x}frac{k_{Delta t}Delta t}{2}frac{q_{0}hat{q}}{m_{0}hat{m}}frac{m_{0}c}{q_{0}hat{c}Delta t}left(mathbf{hat{E}}^{n}+frac{mathbf{hat{u}}^{n}}{cgamma^{n}}frac{Delta x}{Delta t}timeshat{mathbf{B}}^{n}right),</p>
+<p>Remembering the relation <span class="math notranslate nohighlight">\(\Delta t/\Delta x=\hat{c}/c\)</span> and cancelling
+out terms accordingly in both the position update and velocity half-step,
+these equations must take the following form in runko</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{u}^{n+1/2}=mathbf{u}^{n}+frac{k_{Delta t}}{2}frac{hat{q}}{hat{m}}left(mathbf{hat{E}}^{n}+frac{mathbf{hat{u}}^{n}}{hat{c}gamma^{n}}timeshat{mathbf{B}}^{n}right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{x}}^{n+1}=mathbf{hat{x}}^{n}+k_{Delta t}frac{mathbf{hat{u}}^{n+1/2}}{gamma^{n+1/2}},</p>
+<p>Meanwhile, expanding out :math:<a href="#id11"><span class="problematic" id="id12">`</span></a>mathbf{F}`in velocity update yields</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{u}}^{n+1}frac{Delta x}{Delta t}=mathbf{hat{u}}^{n}frac{Delta x}{Delta t}+frac{k_{Delta t}Delta t}{2}left(frac{q_{0}hat{q}}{m_{0}hat{m}}B_{0}left(mathbf{hat{E}}^{n}+frac{hat{mathbf{v}}^{n}}{c}frac{c}{hat{c}}timeshat{mathbf{B}}^{n}right)+frac{q_{0}hat{q}}{m_{0}hat{m}}B_{0}left(mathbf{hat{E}}^{n+1}+frac{hat{mathbf{v}}^{n+1}}{c}frac{c}{hat{c}}timeshat{mathbf{B}}^{n+1}right)right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{u}}^{n+1}frac{Delta x}{Delta t}=mathbf{hat{u}}^{n}frac{Delta x}{Delta t}+frac{k_{Delta t}Delta t}{2}frac{q_{0}hat{q}}{m_{0}hat{m}}B_{0}left(left(mathbf{hat{E}}^{n}+frac{hat{mathbf{v}}^{n}}{hat{c}}timeshat{mathbf{B}}^{n}right)+left(mathbf{hat{E}}^{n+1}+frac{hat{mathbf{v}}^{n+1}}{hat{c}}timeshat{mathbf{B}}^{n+1}right)right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{u}}^{n+1}frac{Delta x}{Delta t}=mathbf{hat{u}}^{n}frac{Delta x}{Delta t}+frac{k_{Delta t}Delta t}{2}frac{q_{0}hat{q}}{m_{0}hat{m}}frac{m_{0}c}{q_{0}hat{c}Delta t}left(mathbf{hat{E}}^{n}+mathbf{hat{E}}^{n+1}+frac{hat{mathbf{v}}^{n}}{hat{c}}timeshat{mathbf{B}}^{n}+frac{hat{mathbf{v}}^{n+1}}{hat{c}}timeshat{mathbf{B}}^{n+1}right),</p>
+<div class="math notranslate nohighlight">
+\[\]</div>
+<p>mathbf{hat{u}}^{n+1}=mathbf{hat{u}}^{n}+k_{Delta t}frac{hat{q}}{hat{m}}left(frac{mathbf{hat{E}}^{n}+mathbf{hat{E}}^{n+1}}{2}+frac{hat{mathbf{v}}^{n}+hat{mathbf{v}}^{n+1}}{2hat{c}}timesfrac{hat{mathbf{B}}^{n}+hat{mathbf{B}}^{n+1}}{2}right),</p>
+<p>where <span class="math notranslate nohighlight">\(\hat{\mathbf{v}}^{n}=\hat{\mathbf{u}}^{n}/\gamma^{n}\)</span>.</p>
+<p>The seemingly implicit form of the velocity update (ref{eq:relvv_u_runko})
+is of the same form as the leapfrog discretisation of velocity and
+can now be solved with the runko-scaled Boris algorithm above. Together
+with (ref{eq:relvv_uhalf_runko}) and (ref{eq:relvv_x_runko}) the
+evolution in time of particle motion can now be solved to second order,
+so long as <span class="math notranslate nohighlight">\(\mathbf{\hat{E}}(\mathbf{\hat{x}},\mathbf{\hat{u}})\)</span>
+and <span class="math notranslate nohighlight">\(\mathbf{\hat{B}}(\mathbf{\hat{x}},\mathbf{\hat{u}})\)</span> can be
+evaluated.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">runko</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clusters.html">Clusters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Runko Unit System and Particle Integration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#leapfrog-boris-in-runko">Leapfrog Boris in Runko</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#relativistic-velocity-verlet">Relativistic Velocity-Verlet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#relativistic-velocity-verlet-in-runko">Relativistic Velocity-Verlet in runko</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Runko Unit System and Particle Integration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pic.html">Relativistic PIC module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields.html">FDTD fields module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vlv.html">Vlasov module</a></li>
+</ul>
+<p class="caption"><span class="caption-text">APIs:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="APIs/fields.html">Fields module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/pic.html">PIC module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/vlv.html">VLV module API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="clusters.html" title="previous chapter">Clusters</a></li>
+      <li>Next: <a href="test.html" title="next chapter">Runko Unit System and Particle Integration</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Kris Smedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/units.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

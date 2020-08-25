@@ -25,21 +25,21 @@
 
 
 //--------------------------------------------------
-  
+
 namespace fields{
 
   namespace py = pybind11;
 
-  
+
 // generator for damped tile for various directions
 template<int D>
 auto declare_tile(
     py::module& m,
-    const std::string& pyclass_name) 
+    const std::string& pyclass_name)
 {
   return py::class_<
              fields::Tile<D>,
-              corgi::Tile<D>, 
+              corgi::Tile<D>,
               std::shared_ptr<fields::Tile<D>>
             >(m, pyclass_name.c_str() )
     .def(py::init<int, int, int>())
@@ -56,9 +56,9 @@ auto declare_tile(
         // keep alive for the lifetime of the grid
         //
         // pybind11:
-        // argument indices start at one, while zero refers to the return 
-        // value. For methods, index one refers to the implicit this pointer, 
-        // while regular arguments begin at index two. 
+        // argument indices start at one, while zero refers to the return
+        // value. For methods, index one refers to the implicit this pointer,
+        // while regular arguments begin at index two.
         // py::keep_alive<nurse,patient>()
         py::keep_alive<1,0>()
         );
@@ -70,18 +70,18 @@ auto declare_tile(
 template<int D, int S>
 auto declare_TileDamped(
     py::module& m,
-    const std::string& pyclass_name) 
+    const std::string& pyclass_name)
 {
-  // using Class = fields::TileDamped<D,S>; 
+  // using Class = fields::TileDamped<D,S>;
   // does not function properly; maybe not triggering template?
   // have to use explicit name instead like this
 
   return py::class_<
              fields::damping::Tile<D,S>,
              fields::Tile<D>,
-             corgi::Tile<D>, 
+             corgi::Tile<D>,
              std::shared_ptr<fields::damping::Tile<D,S>>
-          >(m, 
+          >(m,
             pyclass_name.c_str(),
             py::multiple_inheritance()
             )
@@ -153,7 +153,7 @@ class PyFDTD4 : public FDTD4<D>
 };
 
 
-// templated base-class for Propagator; 
+// templated base-class for Propagator;
 // see https://github.com/pybind/pybind11/blob/master/tests/test_virtual_functions.cpp
 //template <class Base = Propagator<1>, size_t D=1>
 //class PyPropagator : public Base
@@ -201,7 +201,7 @@ class PyFilter : public Filter<D>
 
 void bind_fields(py::module& m_sub)
 {
-    
+
   py::class_<
     fields::YeeLattice,
     std::shared_ptr<fields::YeeLattice>
@@ -232,10 +232,10 @@ void bind_fields(py::module& m_sub)
 
 
   // FIXME extra debug additions/tests
-  //t3.def_property("yee", 
+  //t3.def_property("yee",
   //  &fields::Tile<3>::get_yee2,
   //  &fields::Tile<3>::set_yee,
-  //  py::return_value_policy::reference_internal, 
+  //  py::return_value_policy::reference_internal,
   //  py::keep_alive<0,1>());
   //t3.def("get_yeeptr", &fields::Tile<3>::get_yeeptr
   //    );
@@ -244,19 +244,19 @@ void bind_fields(py::module& m_sub)
 
   // FIXME
   // Declare manually instead because there are too many differences
-  //py::class_<fields::Tile<3>, corgi::Tile<3>, 
+  //py::class_<fields::Tile<3>, corgi::Tile<3>,
   //           std::shared_ptr<fields::Tile<3>>
   //          >(m_3d, "Tile")
   //  .def(py::init<size_t, size_t, size_t>())
   //  .def_readwrite("dx",         &fields::Tile<3>::dx)
   //  .def_readwrite("cfl",        &fields::Tile<3>::cfl)
   //  //.def_readwrite("yee",        &fields::Tile<3>::yee,
-  //  //    py::return_value_policy::reference_internal, 
+  //  //    py::return_value_policy::reference_internal,
   //  //    py::keep_alive<0,1>())
-  //  .def_property("yee", 
+  //  .def_property("yee",
   //      &fields::Tile<3>::get_yee2,
   //      &fields::Tile<3>::set_yee,
-  //      py::return_value_policy::reference_internal, 
+  //      py::return_value_policy::reference_internal,
   //      py::keep_alive<0,1>())
   //  .def("cycle_yee",            &fields::Tile<3>::cycle_yee)
   //  .def("clear_current",        &fields::Tile<3>::clear_current)
@@ -265,15 +265,15 @@ void bind_fields(py::module& m_sub)
   //  .def("exchange_currents",    &fields::Tile<3>::exchange_currents)
   //  .def("get_yeeptr",           &fields::Tile<3>::get_yeeptr,
   //      py::return_value_policy::reference_internal)
-  //  .def("get_yee",              &fields::Tile<3>::get_yee, 
+  //  .def("get_yee",              &fields::Tile<3>::get_yee,
   //      py::arg("i")=0,
   //      py::return_value_policy::reference,
   //      // keep alive for the lifetime of the grid
   //      //
   //      // pybind11:
-  //      // argument indices start at one, while zero refers to the return 
-  //      // value. For methods, index one refers to the implicit this pointer, 
-  //      // while regular arguments begin at index two. 
+  //      // argument indices start at one, while zero refers to the return
+  //      // value. For methods, index one refers to the implicit this pointer,
+  //      // while regular arguments begin at index two.
   //      // py::keep_alive<nurse,patient>()
   //      py::keep_alive<1,0>()
   //      )
@@ -294,7 +294,7 @@ void bind_fields(py::module& m_sub)
   //      //std::shared_ptr<fields::Tile<3>> sp(p);
   //      //sp->index = indices;
   //      //grid.add_tile(sp, indices);
-  //        
+  //
   //      std::shared_ptr<fields::Tile<3>> sp(new fields::Tile<3>(nx,ny,nz));
   //      grid.add_tile(sp, indices);
 
@@ -311,12 +311,12 @@ void bind_fields(py::module& m_sub)
   //      // keep alive for the lifetime of the grid
   //      //
   //      // pybind11:
-  //      // argument indices start at one, while zero refers to the return 
-  //      // value. For methods, index one refers to the implicit this pointer, 
-  //      // while regular arguments begin at index two. 
+  //      // argument indices start at one, while zero refers to the return
+  //      // value. For methods, index one refers to the implicit this pointer,
+  //      // while regular arguments begin at index two.
   //      // py::keep_alive<nurse,patient>()
   //      py::keep_alive<1,0>()
-  //    ); 
+  //    );
 
 
   //--------------------------------------------------
@@ -368,6 +368,7 @@ void bind_fields(py::module& m_sub)
   py::class_< fields::Propagator<3>, PyPropagator<3> > fieldspropag3d(m_3d, "Propagator");
   fieldspropag3d
     .def(py::init<>())
+    .def_readwrite("dt",&fields::Propagator<3>::dt)
     .def("push_e",      &fields::Propagator<3>::push_e)
     .def("push_half_b", &fields::Propagator<3>::push_half_b);
 
@@ -432,14 +433,14 @@ void bind_fields(py::module& m_sub)
 
 
   //--------------------------------------------------
-  // Snapshot IO 
+  // Snapshot IO
 
-  // 2D 
+  // 2D
   py::class_<h5io::FieldsWriter<2>>(m_2d, "FieldsWriter")
     .def(py::init<const std::string&, int, int, int, int, int, int, int>())
     .def("write",   &h5io::FieldsWriter<2>::write);
 
-  // 3D 
+  // 3D
   py::class_<h5io::FieldsWriter<3>>(m_3d, "FieldsWriter")
     .def(py::init<const std::string&, int, int, int, int, int, int, int>())
     .def("write",   &h5io::FieldsWriter<3>::write);
@@ -452,7 +453,7 @@ void bind_fields(py::module& m_sub)
 
 
   //--------------------------------------------------
-  // Full IO 
+  // Full IO
 
   // 1D
   m_1d.def("read_yee",        &fields::read_yee<1>);

@@ -13,7 +13,7 @@ import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
 from pyhack.py_runko_aux import *
-from pyhack.boris_sync import boris_synced_pos, boris_synced_vel
+from pyhack.velocity_verlet import vv_pos, vv_vel
 
 # problem specific modules
 np.random.seed(1)
@@ -280,7 +280,6 @@ if __name__ == "__main__":
     # analyzer = pypic.Analyzator()
     flt      = pyfld.Binomial2(conf.NxMesh, conf.NyMesh, conf.NzMesh)
 
-
     #enhance numerical speed of light slightly to suppress numerical Cherenkov instability
     fldprop.corr = 1.0
 
@@ -306,7 +305,7 @@ if __name__ == "__main__":
 ################################ Simulation Loop ##############################
 #-----------------------------------------------------------------------------#
 
-    time = lap*(conf.cfl/conf.c_omp)
+    time = lap*(conf.dtf*conf.cfl/conf.c_omp)
     for lap in range(lap, conf.Nt+1):
 
         debug_print(grid, "lap_start")
@@ -381,7 +380,7 @@ if __name__ == "__main__":
         debug_print(grid, "push")
 
         for tile in pytools.tiles_local(grid):
-            boris_synced_pos(tile)
+            vv_pos(tile,dtf=conf.dtf)
             # pushloc.solve(tile)
 
         timer.stop_comp("push")
@@ -456,7 +455,7 @@ if __name__ == "__main__":
         debug_print(grid, "push")
 
         for tile in pytools.tiles_local(grid):
-            boris_synced_vel(tile)
+            vv_vel(tile,dtf=conf.dtf)
             # pushvel.solve(tile)
 
         timer.stop_comp("push")
@@ -469,7 +468,7 @@ if __name__ == "__main__":
 
         # for cid in grid.get_tile_ids():
         #     tile = grid.get_tile(cid)
-        fldprop.dt = 0.5
+        fldprop.dt = conf.dtf
         for tile in pytools.tiles_all(grid):
             fldprop.push_e(tile)
 
@@ -685,14 +684,17 @@ if __name__ == "__main__":
             sys.stdout.flush()
 
         #next step
-        time += conf.cfl/conf.c_omp
+        time += conf.dtf*conf.cfl/conf.c_omp
 
     #end of loop
 
     timer.stop("total")
     timer.stats("total")
 
-    output_sync(t,x,y,vx,vy,conf,'sync')
+    output_vv(t,x,y,vx,vy,conf,'sync_py_' + conf.name + '_')
+
+    filename = "vv_wp_gyro10.h5"
+    wp_dump(t,x,y,vx,vy,conf,filename)
 
     print("")
     print("------------------------------------- END ------------------------------------")

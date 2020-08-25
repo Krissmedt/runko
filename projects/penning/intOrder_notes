@@ -1,0 +1,29 @@
+Integration order
+
+Leapfrog
+Start: x(t), v(t-1/2*dt), E(t), B(t-1/2dt)
+
+1. B(t-1/2dt) -> B(t) using E(t)
+2. Interpolate B(t), E(t) to particles
+3. Boris push: v(t-1/2*dt) -> v(t+1/2*dt), x(t) -> x(t+dt) using B(t), E(t)
+4. B(t) -> B(t+1/2dt) using E(t)
+5. E(t) -> E(t+dt) using B(t+1/2dt)
+6. Gather currents j(t+dt) using x(t+dt)/v(t+1/2*dt)
+7. Add currents j(t+dt) to E(t+dt)
+
+End: x(t+dt), v(t+1/2*dt), E(t+dt), B(t+1/2dt)
+
+
+Velocity-Verlet
+Start: x(t), v(t), E(t), B(t-1/2*dt)
+1. B(t-1/2*dt) -> B(t) using E(t)
+2. Position push: x(t) -> x(t+dt) using v(t), E(t), B(t)
+3. B(t) -> B(t+1/2*dt) using E(t)
+4. E(t) -> E(t+1/2*dt) using B(t+1/2dt)
+6. Interpolate B(t+1/2*dt), E(t+1/2*dt) to particles
+7. Boris velocity push: v(t) -> v(t+dt), using B(t+1/2*dt), E(t+1/2*dt)
+8. E(t+1/2*dt) -> E(t+dt) using B(t+1/2dt)
+9. Gather currents j(t+dt) using x(t+dt)/v(t+1/2*dt)
+10. Add currents j(t+dt) to E(t+dt)
+
+End: x(t+dt), v(t+dt), E(t+dt), B(t+1/2*dt)

@@ -1,0 +1,232 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tutorial: Particle gyration &#8212; runko  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tutorial-particle-gyration">
+<h1>Tutorial: Particle gyration<a class="headerlink" href="#tutorial-particle-gyration" title="Permalink to this headline">¶</a></h1>
+<p>In this tutorial we use Runko to run a small simulation of a particle orbiting in the plane perpendicular to a constant magnetic field.</p>
+<img alt="https://cdn.jsdelivr.net/gh/natj/pb-utilities&#64;master/movies/shock.gif" src="https://cdn.jsdelivr.net/gh/natj/pb-utilities&#64;master/movies/shock.gif" />
+<div class="section" id="running-a-particle-gyration-simulation">
+<h2>Running a particle gyration simulation<a class="headerlink" href="#running-a-particle-gyration-simulation" title="Permalink to this headline">¶</a></h2>
+<p>You will find the related scripts to run the simulation and the analytical tools in</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>/runko/projects/tests/prtcl_gyration
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuring-the-simulation">
+<h2>Configuring the simulation<a class="headerlink" href="#configuring-the-simulation" title="Permalink to this headline">¶</a></h2>
+<p>To configure the simulation, you can edit the gyration.ini file. As the simulation is very simple, it should finish in seconds.</p>
+<p>The following settings are given:</p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>[io]</dt>
+<dd><ul class="first last">
+<li><cite>outdir</cite>: Defines the output directory name</li>
+<li><cite>interval</cite>: No. of steps between output files written</li>
+<li><cite>restart</cite>: No. of steps between restart files written</li>
+<li><cite>laprestart</cite>: Simulation lap to restart from (-1 = no restart, 0 = automatic, X lap to restart)</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Additionally, more advanced options include</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>stride</cite>: Output image reduce factor</li>
+<li><cite>full_interval</cite>: No. of steps between full restart snapshot written to file (-1 = disabled)</li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>[simulation]</dt>
+<dd><ul class="first last">
+<li><cite>cfl</cite>: The simulation time step in units of grid space</li>
+<li><cite>Nt</cite>: The total number of laps in the simulation</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>[problem]</dt>
+<dd><ul class="first last">
+<li><cite>Nspecies</cite>: Number of species</li>
+<li><cite>npasses</cite>: Number of current filter passes, default 0, don’t edit.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Additionally, more advanced options include</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>bphi</cite>: external B-field z angle</li>
+<li><cite>btheta</cite>: external B-field x-y angle</li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>[grid]</dt>
+<dd><ul class="first last">
+<li><cite>Nx</cite>, <cite>Ny</cite>, <cite>Nz</cite>: No. of mesh tiles in x,y,z direction, default 1, don’t edit.</li>
+<li><cite>NxMesh</cite>/<cite>NyMesh</cite>/<cite>NzMesh</cite>: Size of tiles in x,y,z direction</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Complete grid size is then <cite>Ni*NiMesh</cite>, however, this will be overwritten in the gyration test case with a mesh sized to contain the Larmor gyration of the particle, the radius</p>
+<div class="math notranslate nohighlight">
+\[r_l = \frac{\gamma m c v}{qB}\]</div>
+<p>where the orthogonal velocity <span class="math notranslate nohighlight">\(v\)</span> will be calculated from the relativestic factor input <span class="math notranslate nohighlight">\(\gamma\)</span> (see below).</p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>[particles]</dt>
+<dd><ul class="first last">
+<li><cite>gamma</cite>: Relativistic factor of the particle, determines speed, increasing the value increases the Larmor radius, and the simulation box must be sized up accordingly.</li>
+<li><cite>ppc</cite>: Particles per cell per species</li>
+<li><cite>c_omp</cite>: Skindepth resolution</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Additionally, more advanced options include</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>n_test_prtcls</cite>: Number of test particles tracked in simulation, default 2 to track the two manually loaded particles, don’t edit.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this headline">¶</a></h2>
+<p>To run a gyration simulation in Runko using a given particle integrator &lt;pusher&gt;, use the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 &lt;pusher&gt;_pic.py --conf gyration.ini
+</pre></div>
+</div>
+<p>To run a gyration simulation in Runko using multiple cores, use the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mpirun <span class="o">[</span>-n no_of_cores<span class="o">]</span> python3 &lt;pusher&gt;_pic.py --conf gyration.ini
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-the-analysis-tools">
+<h2>Using the analysis tools<a class="headerlink" href="#using-the-analysis-tools" title="Permalink to this headline">¶</a></h2>
+<p>There are four tools provided for use in studying the results:</p>
+<div class="section" id="particle-orbit">
+<h3>1. Particle orbit<a class="headerlink" href="#particle-orbit" title="Permalink to this headline">¶</a></h3>
+<p>“&lt;pusher&gt;_orbit.pdf” provides a plot of the particle orbit in XY perpendicular to the input magnetic field.</p>
+</div>
+<div class="section" id="particle-velocity-oscillations">
+<h3>2. Particle velocity oscillations<a class="headerlink" href="#particle-velocity-oscillations" title="Permalink to this headline">¶</a></h3>
+<p>“&lt;pusher&gt;_vx.pdf” and “&lt;pusher&gt;_vy.pdf” provide plots of the particle x and y velocities vs. time and should reinforce the harmonically oscillating nature of the system.</p>
+</div>
+<div class="section" id="kinetic-energy">
+<h3>3. Kinetic energy<a class="headerlink" href="#kinetic-energy" title="Permalink to this headline">¶</a></h3>
+<p>“&lt;pusher&gt;_energy.pdf” provides a plot of the particle kinetic energy over time, the behaviour of which will depend on the chosen particle pusher.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">runko</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Runko Unit System and Particle Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Runko Unit System and Particle Integration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pic.html">Relativistic PIC module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields.html">FDTD fields module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vlv.html">Vlasov module</a></li>
+</ul>
+<p class="caption"><span class="caption-text">APIs:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="APIs/fields.html">Fields module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/pic.html">PIC module API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="APIs/vlv.html">VLV module API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Kris Smedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/gyration.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
