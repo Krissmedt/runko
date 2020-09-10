@@ -23,8 +23,8 @@ debug = False
 def py_init(conf):
     t = [0]
     x = [np.array([conf.x_start])]
-    y = [np.array([conf.NyMesh/2+ conf.NyMesh/4.])]
-    z = [np.array([conf.NzMesh/2+ conf.NzMesh/4.])]
+    y = [np.array([conf.NyMesh/2.])]
+    z = [np.array([conf.NzMesh/10.])]
     vx = [np.array([conf.ux])]
     vy = [np.array([conf.uy])]
     vz = [np.array([conf.uz])]
@@ -73,8 +73,8 @@ def direct_inject(grid, conf):
     container = c.get_container(0)
 
     x = conf.x_start
-    y = conf.NyMesh/2. + conf.NyMesh/4.
-    z = conf.NzMesh/2. + conf.NzMesh/4.
+    y = conf.NyMesh/2.
+    z = conf.NzMesh/10.
     x01 = [x,y,z]
 
     vx = conf.ux
@@ -114,9 +114,9 @@ def insert_em(grid, conf):
                     yee.by[l,m,n] = 0. #conf.binit*np.sin(btheta)*np.sin(bphi)
                     yee.bz[l,m,n] = conf.binit #conf.binit*np.sin(btheta)*np.cos(bphi)
 
-                    yee.ex[l,m,n] = (conf.NxMesh/2.-iglob) * conf.einit
-                    yee.ey[l,m,n] = (conf.NyMesh/2.-jglob) * conf.einit #-beta*yee.bz[l,m,n]
-                    yee.ez[l,m,n] = -2*(conf.NzMesh/2.-kglob) * conf.einit #beta*yee.by[l,m,n]
+                    yee.ex[l,m,n] = 0.
+                    yee.ey[l,m,n] = 0. #-beta*yee.bz[l,m,n]
+                    yee.ez[l,m,n] = conf.einit #beta*yee.by[l,m,n]
 
 
 if __name__ == "__main__":
@@ -383,7 +383,6 @@ if __name__ == "__main__":
                 lf_boris(tile,dtf=conf.dtf)
         else:
             for tile in pytools.tiles_local(grid):
-                print(py_em(tile.get_container(0)))
                 lf_boris_first(tile,dtf=conf.dtf)
 
         timer.stop_comp("push")
@@ -663,7 +662,7 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_lf(t,x,y,z,vx,vy,vz,conf,'leapfrog_' + conf.name + '_')
+    output_lf(t,x,y,z,vx,vy,vz,conf,'lf_' + conf.name + '_')
 
     filename = "lf_{0}.h5".format(conf.name)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)

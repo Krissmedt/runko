@@ -14,7 +14,7 @@ import pytools  # runko python tools
 # Runko-Python functionality by Krissmedt
 from pyhack.coll_setup import coll
 from pyhack.boris_sdc import *
-from pyhack.py_runko_aux_3d import *
+from pyhack.py_runko_aux import *
 
 # problem specific modules
 np.random.seed(1)
@@ -24,16 +24,14 @@ debug = False
 
 def py_init(conf):
     t = [0]
-    x = [np.array([conf.x_start])]
-    y = [np.array([conf.NyMesh/2+ conf.NyMesh/4.])]
-    z = [np.array([conf.NzMesh/2+ conf.NzMesh/4.])]
-    vx = [np.array([conf.ux])]
-    vy = [np.array([conf.uy])]
-    vz = [np.array([conf.uz])]
+    x = [np.array([conf.x_start,conf.x_start2])]
+    y = [np.array([conf.NyMesh/2,conf.NyMesh/2])]
+    vx = [np.array([0.,0.])]
+    vy = [np.array([conf.uy,conf.uy2])]
     xres = [np.zeros(conf.K+1,dtype=np.float)]
     vres = [np.zeros(conf.K+1,dtype=np.float)]
 
-    return t,x,y,z,vx,vy,vz,xres,vres
+    return t,x,y,vx,vy,xres,vres
 
 
 def debug_print(n, msg):
@@ -41,26 +39,61 @@ def debug_print(n, msg):
         print("{}: {}".format(n.rank(), msg))
         sys.stdout.flush()
 
+
+def filler(xloc, ispcs, conf):
+    # perturb position between x0 + RUnif[0,1)
+
+    #electrons
+    if ispcs == 0:
+        delgam  = conf.delgam #* np.abs(conf.mi / conf.me) * conf.temp_ratio
+
+        xx = xloc[0] + np.random.rand(1)
+        yy = xloc[1] + np.random.rand(1)
+        #zz = xloc[2] + np.random.rand(1)
+        zz = 0.5
+
+    #positrons/ions/second species
+    if ispcs == 1:
+        delgam  = conf.delgam
+
+        #on top of electrons
+        xx = xloc[0]
+        yy = xloc[1]
+        zz = 0.5
+
+    gamma = conf.gamma
+    direction = -1
+    ux, uy, uz, uu = boosted_maxwellian(delgam, gamma, direction=direction, dims=3)
+
+    x0 = [xx, yy, zz]
+    u0 = [ux, uy, uz]
+    return x0, u0
+
+
 def direct_inject(grid, conf):
-    cid = grid.id(0,0,0)
+    cid = grid.id(0,0)
     c = grid.get_tile(cid)
     container = c.get_container(0)
 
     x = conf.x_start
-    y = conf.NyMesh/2. + conf.NyMesh/4.
-    z = conf.NzMesh/2. + conf.NzMesh/4.
+    x2 = conf.x_start2
+    y = conf.NyMesh/2.
+    z = 0.5
     x01 = [x,y,z]
+    x02 = [x2,y,z]
 
-    vx = conf.ux
+    vx = 0
     vy = conf.uy
-    vz = conf.uz
+    vy2 = conf.uy2
+    vz = 0
     u01 = [vx,vy,vz]
+    u02 = [vx,vy2,vz]
 
     container.add_particle(x01,u01,1.0)
-    # container.add_particle(x02,u02,1.0)
+    container.add_particle(x02,u02,1.0)
 
-    x0 = [x01]
-    u0 = [u01]
+    x0 = [x01,x02]
+    u0 = [u01,u02]
 
     return x0,u0
 
@@ -71,6 +104,7 @@ def insert_em(grid, conf):
     #into radians
     btheta = conf.btheta/180.*np.pi
     bphi   = conf.bphi/180.*np.pi
+    beta   = conf.beta
 
     kk = 0
     for cid in grid.get_tile_ids():
@@ -84,13 +118,14 @@ def insert_em(grid, conf):
                 for l in range(-3, conf.NxMesh+3):
                     # get global coordinates
                     iglob, jglob, kglob = pytools.ind2loc((ii, jj, kk), (l, m, n), conf)
+
                     yee.bx[l,m,n] = 0. #conf.binit*np.cos(btheta)
                     yee.by[l,m,n] = 0. #conf.binit*np.sin(btheta)*np.sin(bphi)
                     yee.bz[l,m,n] = conf.binit #conf.binit*np.sin(btheta)*np.cos(bphi)
 
-                    yee.ex[l,m,n] = (conf.NxMesh/2.-iglob) * conf.einit
-                    yee.ey[l,m,n] = (conf.NyMesh/2.-jglob) * conf.einit #-beta*yee.bz[l,m,n]
-                    yee.ez[l,m,n] = -2*(conf.NzMesh/2.-kglob) * conf.einit #beta*yee.by[l,m,n]
+                    yee.ex[l,m,n] = 0.0
+                    yee.ey[l,m,n] = 0. #-beta*yee.bz[l,m,n]
+                    yee.ez[l,m,n] = 0. #beta*yee.by[l,m,n]
 
 
 if __name__ == "__main__":
@@ -154,7 +189,7 @@ if __name__ == "__main__":
     xmax = conf.Nx*conf.NxMesh #XXX scaled length
     ymin = 0.0
     ymax = conf.Ny*conf.NyMesh
-    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax,conf.zmin,conf.zmax)
+    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax)
 
     # compute initial mpi ranks using Hilbert's curve partitioning
     pytools.balance_mpi(grid, conf)
@@ -178,7 +213,7 @@ if __name__ == "__main__":
         np.random.seed(1)  # sync rnd generator seed for different mpi ranks
 
         # initialising solution arrays
-        t,x,y,z,vx,vy,vz,xres,vres = py_init(conf)
+        t,x,y,vx,vy,xres,vres = py_init(conf)
         # injecting plasma particles
         prtcl_stat = direct_inject(grid,conf) #inject plasma particles individually by loc,vel
         if do_print:
@@ -296,15 +331,6 @@ if __name__ == "__main__":
             col.un[1,:,:] = col.u[1,:,:]
             col.En[1,:,:] = col.E[1,:,:]
             col.Bn[1,:,:] = col.B[1,:,:]
-
-            ## Reset runko particles to first node ##########
-            for tile in pytools.tiles_local(grid):
-                tile.delete_all_particles()
-                cont = tile.get_container(0)
-                for i in range(0,col.nq):
-                    cont.add_particle(col.xn[1,i,:],col.un[1,i,:]/tile.cfl,1.0)
-            ################################################
-
             for m in range(col.ssi,col.M):
                 #--------------------------------------------------
                 # comm B
@@ -380,6 +406,8 @@ if __name__ == "__main__":
                     # pushloc.solve(tile)
 
                 timer.stop_comp("push")
+
+
 
 
                 # advance B half
@@ -468,6 +496,159 @@ if __name__ == "__main__":
 
                 timer.stop_comp("push_e")
 
+                #Current calculations
+                # # --------------------------------------------------
+                # # current calculation; charge conserving current deposition
+                # t1 = timer.start_comp("comp_curr")
+                # for tile in pytools.tiles_local(grid):
+                #     currint.solve(tile)
+                # timer.stop_comp(t1)
+                #
+                # # --------------------------------------------------
+                # # clear virtual current arrays for boundary addition after mpi
+                # t1 = timer.start_comp("clear_vir_cur")
+                # for tile in pytools.tiles_virtual(grid):
+                #     tile.clear_current()
+                # timer.stop_comp(t1)
+                #
+                # # --------------------------------------------------
+                # # mpi send currents
+                # t1 = timer.start_comp("mpi_cur")
+                # grid.send_data(0)
+                # grid.recv_data(0)
+                # grid.wait_data(0)
+                # timer.stop_comp(t1)
+                #
+                # # --------------------------------------------------
+                # # exchange currents
+                # t1 = timer.start_comp("cur_exchange")
+                # for tile in pytools.tiles_all(grid):
+                #     tile.exchange_currents(grid)
+                # timer.stop_comp(t1)
+
+
+                ##################################################
+                # particle communication (only local/boundary tiles)
+
+                #--------------------------------------------------
+                #local particle exchange (independent)
+                timer.start_comp("check_outg_prtcls")
+                debug_print(grid, "check_outg_prtcls")
+
+                for tile in pytools.tiles_local(grid):
+                    tile.check_outgoing_particles()
+
+                timer.stop_comp("check_outg_prtcls")
+
+                #--------------------------------------------------
+                # global mpi exchange (independent)
+                timer.start_comp("pack_outg_prtcls")
+                debug_print(grid, "pack_outg_prtcls")
+
+                for tile in pytools.tiles_boundary(grid):
+                    tile.pack_outgoing_particles()
+
+                timer.stop_comp("pack_outg_prtcls")
+
+                # --------------------------------------------------
+                # MPI global particle exchange
+                # transfer primary and extra data
+                t1 = timer.start_comp("mpi_prtcls")
+                grid.send_data(3)
+                grid.recv_data(3)
+                grid.wait_data(3)
+
+                # orig just after send3
+                grid.send_data(4)
+                grid.recv_data(4)
+                grid.wait_data(4)
+                timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # global unpacking (independent)
+                t1 = timer.start_comp("unpack_vir_prtcls")
+                for tile in pytools.tiles_virtual(grid):
+                    tile.unpack_incoming_particles()
+                    tile.check_outgoing_particles()
+                timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # transfer local + global
+                t1 = timer.start_comp("get_inc_prtcls")
+                for tile in pytools.tiles_local(grid):
+                    tile.get_incoming_particles(grid)
+                timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # delete local transferred particles
+                t1 = timer.start_comp("del_trnsfrd_prtcls")
+                for tile in pytools.tiles_local(grid):
+                    tile.delete_transferred_particles()
+                timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # delete all virtual particles (because new prtcls will come)
+                t1 = timer.start_comp("del_vir_prtcls")
+                for tile in pytools.tiles_virtual(grid):
+                    tile.delete_all_particles()
+                timer.stop_comp(t1)
+
+                ##################################################
+                # filter
+                timer.start_comp("filter")
+
+                #sweep over npasses times
+                for fj in range(conf.npasses):
+
+                    #update global neighbors (mpi)
+                    grid.send_data(0)
+                    grid.recv_data(0)
+                    grid.wait_data(0)
+
+                    #get halo boundaries
+                    for cid in grid.get_local_tiles():
+                        tile = grid.get_tile(cid)
+                        tile.update_boundaries(grid)
+
+                    #filter each tile
+                    for cid in grid.get_local_tiles():
+                        tile = grid.get_tile(cid)
+                        flt.solve(tile)
+
+                    MPI.COMM_WORLD.barrier() # sync everybody
+
+
+                # --------------------------------------------------
+                timer.stop_comp("filter")
+
+                # --------------------------------------------------
+                # add current to E
+                # t1 = timer.start_comp("add_cur")
+                # for tile in pytools.tiles_all(grid):
+                #     tile.deposit_current()
+                # timer.stop_comp(t1)
+
+                # comm E
+                # t1 = timer.start_comp("mpi_e2")
+                # grid.send_data(1)
+                # grid.recv_data(1)
+                # grid.wait_data(1)
+                # timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # comm B
+                # t1 = timer.start_comp("mpi_b1")
+                # grid.send_data(2)
+                # grid.recv_data(2)
+                # grid.wait_data(2)
+                # timer.stop_comp(t1)
+
+                # --------------------------------------------------
+                # update boundaries
+                t1 = timer.start_comp("upd_bc0")
+                for tile in pytools.tiles_all(grid):
+                    tile.update_boundaries(grid)
+                timer.stop_comp(t1)
 
             ## Update nodal arrays for new iteration
             col.E = np.copy(col.En[:,:,:])
@@ -477,112 +658,16 @@ if __name__ == "__main__":
             col.calc_residual(k)
 
         ##################################################
-        # particle communication (only local/boundary tiles)
-
-        #--------------------------------------------------
-        #local particle exchange (independent)
-        timer.start_comp("check_outg_prtcls")
-        debug_print(grid, "check_outg_prtcls")
-
-        for tile in pytools.tiles_local(grid):
-            tile.check_outgoing_particles()
-
-        timer.stop_comp("check_outg_prtcls")
-
-        #--------------------------------------------------
-        # global mpi exchange (independent)
-        timer.start_comp("pack_outg_prtcls")
-        debug_print(grid, "pack_outg_prtcls")
-
-        for tile in pytools.tiles_boundary(grid):
-            tile.pack_outgoing_particles()
-
-        timer.stop_comp("pack_outg_prtcls")
-
-        # --------------------------------------------------
-        # MPI global particle exchange
-        # transfer primary and extra data
-        t1 = timer.start_comp("mpi_prtcls")
-        grid.send_data(3)
-        grid.recv_data(3)
-        grid.wait_data(3)
-
-        # orig just after send3
-        grid.send_data(4)
-        grid.recv_data(4)
-        grid.wait_data(4)
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # global unpacking (independent)
-        t1 = timer.start_comp("unpack_vir_prtcls")
-        for tile in pytools.tiles_virtual(grid):
-            tile.unpack_incoming_particles()
-            tile.check_outgoing_particles()
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # transfer local + global
-        t1 = timer.start_comp("get_inc_prtcls")
-        for tile in pytools.tiles_local(grid):
-            tile.get_incoming_particles(grid)
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # delete local transferred particles
-        t1 = timer.start_comp("del_trnsfrd_prtcls")
-        for tile in pytools.tiles_local(grid):
-            tile.delete_transferred_particles()
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # delete all virtual particles (because new prtcls will come)
-        t1 = timer.start_comp("del_vir_prtcls")
-        for tile in pytools.tiles_virtual(grid):
-            tile.delete_all_particles()
-        timer.stop_comp(t1)
-
-        ##################################################
-        # filter
-        timer.start_comp("filter")
-
-        #sweep over npasses times
-        for fj in range(conf.npasses):
-
-            #update global neighbors (mpi)
-            grid.send_data(0)
-            grid.recv_data(0)
-            grid.wait_data(0)
-
-            #get halo boundaries
-            for cid in grid.get_local_tiles():
-                tile = grid.get_tile(cid)
-                tile.update_boundaries(grid)
-
-            #filter each tile
-            for cid in grid.get_local_tiles():
-                tile = grid.get_tile(cid)
-                flt.solve(tile)
-
-            MPI.COMM_WORLD.barrier() # sync everybody
-
-
-        # --------------------------------------------------
-        timer.stop_comp("filter")
-
-        ##################################################
         # data reduction and I/O
-        cid = grid.id(0,0,0)
+        cid = grid.id(0,0)
         c = grid.get_tile(cid)
         container = c.get_container(0)
 
         t.append(time)
         x.append(container.loc(0))
         y.append(container.loc(1))
-        z.append(container.loc(2))
         vx.append(container.vel(0))
         vy.append(container.vel(1))
-        vz.append(container.vel(2))
         xres.append(np.linalg.norm(col.Rx,axis=1))
         vres.append(np.linalg.norm(col.Rv,axis=1))
 
@@ -637,10 +722,10 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_sdc(t,x,y,z,vx,vy,vz,xres,vres,conf,'sdc_py_' + conf.name + '_')
+    output_sdc(t,x,y,vx,vy,xres,vres,conf,'sdc_py_' + conf.name + '_')
 
     filename = "sdc_M{0}K{1}_{2}.h5".format(conf.M,conf.K,conf.name)
-    wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
+    wp_dump(t,x,y,vx,vy,conf,filename)
 
     print("")
     print("------------------------------------- END ------------------------------------")

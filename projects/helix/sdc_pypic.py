@@ -6,12 +6,14 @@ from mpi4py import MPI
 import numpy as np
 import sys, os
 import matplotlib.pyplot as plt
+import time
 
 # runko + auxiliary modules
 import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
-from pyhack.leapfrog import lf_boris, lf_boris_first
+from pyhack.coll_setup import coll
+from pyhack.boris_sdc import *
 from pyhack.py_runko_aux_3d import *
 
 # problem specific modules
@@ -23,49 +25,21 @@ debug = False
 def py_init(conf):
     t = [0]
     x = [np.array([conf.x_start])]
-    y = [np.array([conf.NyMesh/2+ conf.NyMesh/4.])]
-    z = [np.array([conf.NzMesh/2+ conf.NzMesh/4.])]
+    y = [np.array([conf.NyMesh/2.])]
+    z = [np.array([conf.NzMesh/10.])]
     vx = [np.array([conf.ux])]
     vy = [np.array([conf.uy])]
     vz = [np.array([conf.uz])]
+    xres = [np.zeros(conf.K+1,dtype=np.float)]
+    vres = [np.zeros(conf.K+1,dtype=np.float)]
 
-    return t,x,y,z,vx,vy,vz
+    return t,x,y,z,vx,vy,vz,xres,vres
+
 
 def debug_print(n, msg):
     if debug:
         print("{}: {}".format(n.rank(), msg))
         sys.stdout.flush()
-
-
-def filler(xloc, ispcs, conf):
-    # perturb position between x0 + RUnif[0,1)
-
-    #electrons
-    if ispcs == 0:
-        delgam  = conf.delgam #* np.abs(conf.mi / conf.me) * conf.temp_ratio
-
-        xx = xloc[0] + np.random.rand(1)
-        yy = xloc[1] + np.random.rand(1)
-        #zz = xloc[2] + np.random.rand(1)
-        zz = 0.5
-
-    #positrons/ions/second species
-    if ispcs == 1:
-        delgam  = conf.delgam
-
-        #on top of electrons
-        xx = xloc[0]
-        yy = xloc[1]
-        zz = 0.5
-
-    gamma = conf.gamma
-    direction = -1
-    ux, uy, uz, uu = boosted_maxwellian(delgam, gamma, direction=direction, dims=3)
-
-    x0 = [xx, yy, zz]
-    u0 = [ux, uy, uz]
-    return x0, u0
-
 
 def direct_inject(grid, conf):
     cid = grid.id(0,0,0)
@@ -73,8 +47,8 @@ def direct_inject(grid, conf):
     container = c.get_container(0)
 
     x = conf.x_start
-    y = conf.NyMesh/2. + conf.NyMesh/4.
-    z = conf.NzMesh/2. + conf.NzMesh/4.
+    y = conf.NyMesh/2.
+    z = conf.NzMesh/10.
     x01 = [x,y,z]
 
     vx = conf.ux
@@ -114,20 +88,22 @@ def insert_em(grid, conf):
                     yee.by[l,m,n] = 0. #conf.binit*np.sin(btheta)*np.sin(bphi)
                     yee.bz[l,m,n] = conf.binit #conf.binit*np.sin(btheta)*np.cos(bphi)
 
-                    yee.ex[l,m,n] = (conf.NxMesh/2.-iglob) * conf.einit
-                    yee.ey[l,m,n] = (conf.NyMesh/2.-jglob) * conf.einit #-beta*yee.bz[l,m,n]
-                    yee.ez[l,m,n] = -2*(conf.NzMesh/2.-kglob) * conf.einit #beta*yee.by[l,m,n]
+                    yee.ex[l,m,n] = 0.
+                    yee.ey[l,m,n] = 0. #-beta*yee.bz[l,m,n]
+                    yee.ez[l,m,n] = conf.einit #beta*yee.by[l,m,n]
 
 
 if __name__ == "__main__":
 
     do_plots = True
-    do_print = False
+    do_print = True
 
     if MPI.COMM_WORLD.Get_rank() == 0:
-        do_print = False
+        do_print = True
 
     if do_print:
+        print("")
+        print("")
         print("Running with {} MPI processes.".format(MPI.COMM_WORLD.Get_size()))
 
     ##################################################
@@ -178,7 +154,7 @@ if __name__ == "__main__":
     xmax = conf.Nx*conf.NxMesh #XXX scaled length
     ymin = 0.0
     ymax = conf.Ny*conf.NyMesh
-    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax, conf.zmin,conf.zmax)
+    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax,conf.zmin,conf.zmax)
 
     # compute initial mpi ranks using Hilbert's curve partitioning
     pytools.balance_mpi(grid, conf)
@@ -202,7 +178,7 @@ if __name__ == "__main__":
         np.random.seed(1)  # sync rnd generator seed for different mpi ranks
 
         # initialising solution arrays
-        t,x,y,z,vx,vy,vz = py_init(conf)
+        t,x,y,z,vx,vy,vz,xres,vres = py_init(conf)
         # injecting plasma particles
         prtcl_stat = direct_inject(grid,conf) #inject plasma particles individually by loc,vel
         if do_print:
@@ -261,8 +237,8 @@ if __name__ == "__main__":
 
 
     Nsamples = conf.Nt
-    #pusher   = pypic.BorisPusher()
-    pusher   = pypic.VayPusher()
+    pushloc   = pypic.VerletLocPusher()
+    pushvel   = pypic.VerletVelPusher()
 
 
     fldprop  = pyfld.FDTD2()
@@ -296,181 +272,200 @@ if __name__ == "__main__":
 #-----------------------------------------------------------------------------#
 ################################ Simulation Loop ##############################
 #-----------------------------------------------------------------------------#
+    col = coll(tile,dtf=conf.dtf,M=conf.M,K=conf.K)
+
+    #--------------------------------------------------
+    #interpolate fields (can move to next asap)
+    timer.start_comp("interp_em")
+    debug_print(grid, "interp_em")
+
+    for tile in pytools.tiles_local(grid):
+        fintp.solve(tile)
+
+    timer.stop_comp("interp_em")
+    #--------------------------------------------------
 
     time = lap*(conf.dtf*conf.cfl/conf.c_omp)
     for lap in range(lap, conf.Nt+1):
+        # Initialise Boris-SDC (nodal arrays and such)
+        # print("Nt={0}".format(lap))
+        boris_sdc_init(tile,col)
         debug_print(grid, "lap_start")
+        for k in range(1,col.K+1):
+            col.xn[1,:,:] = col.x[1,:,:]
+            col.un[1,:,:] = col.u[1,:,:]
+            col.En[1,:,:] = col.E[1,:,:]
+            col.Bn[1,:,:] = col.B[1,:,:]
+            for m in range(col.ssi,col.M):
+                #--------------------------------------------------
+                # comm B
+                timer.start_comp("mpi_b1")
+                debug_print(grid, "mpi_b1")
 
-        #--------------------------------------------------
-        # Particle position push
+                grid.send_data(2)
+                grid.recv_data(2)
+                grid.wait_data(2)
 
+                timer.stop_comp("mpi_b1")
 
+                #--------------------------------------------------
+                #update boundaries
+                timer.start_comp("upd_bc0")
+                debug_print(grid, "upd_bc0")
 
-        #--------------------------------------------------
-        # comm B
-        timer.start_comp("mpi_b1")
-        debug_print(grid, "mpi_b1")
+                for tile in pytools.tiles_all(grid):
+                    tile.update_boundaries(grid)
 
-        grid.send_data(2)
-        grid.recv_data(2)
-        grid.wait_data(2)
+                timer.stop_comp("upd_bc0")
 
-        timer.stop_comp("mpi_b1")
+                #--------------------------------------------------
+                #push B half
+                timer.start_comp("push_half_b1")
+                debug_print(grid, "push_half_b1")
 
-        #--------------------------------------------------
-        #update boundaries
-        timer.start_comp("upd_bc0")
-        debug_print(grid, "upd_bc0")
+                for tile in pytools.tiles_all(grid):
+                    fldprop.push_half_b(tile)
 
-        for tile in pytools.tiles_all(grid):
-            tile.update_boundaries(grid)
+                timer.stop_comp("push_half_b1")
 
-        timer.stop_comp("upd_bc0")
+                #--------------------------------------------------
+                # comm B
+                timer.start_comp("mpi_b2")
+                debug_print(grid, "mpi_b2")
 
-        #--------------------------------------------------
-        #push B half
-        timer.start_comp("push_half_b1")
-        debug_print(grid, "push_half_b1")
+                grid.send_data(2)
+                grid.recv_data(2)
+                grid.wait_data(2)
 
-        for tile in pytools.tiles_all(grid):
-            fldprop.push_half_b(tile)
+                timer.stop_comp("mpi_b2")
 
-        timer.stop_comp("push_half_b1")
+                #--------------------------------------------------
+                #update boundaries
+                timer.start_comp("upd_bc1")
+                debug_print(grid, "upd_bc1")
 
-        #--------------------------------------------------
-        # comm B
-        timer.start_comp("mpi_b2")
-        debug_print(grid, "mpi_b2")
+                for tile in pytools.tiles_all(grid):
+                    tile.update_boundaries(grid)
 
-        grid.send_data(2)
-        grid.recv_data(2)
-        grid.wait_data(2)
+                timer.stop_comp("upd_bc1")
 
-        timer.stop_comp("mpi_b2")
+                #--------------------------------------------------
+                #interpolate fields (can move to next asap)
+                timer.start_comp("interp_em")
+                debug_print(grid, "interp_em")
 
-        #--------------------------------------------------
-        #update boundaries
-        timer.start_comp("upd_bc1")
-        debug_print(grid, "upd_bc1")
+                for tile in pytools.tiles_local(grid):
+                    fintp.solve(tile)
 
-        for tile in pytools.tiles_all(grid):
-            tile.update_boundaries(grid)
+                timer.stop_comp("interp_em")
+                #--------------------------------------------------
 
-        timer.stop_comp("upd_bc1")
+                ##################################################
+                #--------------------------------------------------
+                #push particles in x
+                timer.start_comp("push")
+                debug_print(grid, "push")
 
+                for tile in pytools.tiles_local(grid):
+                    boris_sdc_pos(tile,col,m)
+                    # pushloc.solve(tile)
 
-        ##################################################
-        # move particles (only locals tiles)
-
-        #--------------------------------------------------
-        #interpolate fields (can move to next asap)
-        timer.start_comp("interp_em")
-        debug_print(grid, "interp_em")
-
-        for tile in pytools.tiles_local(grid):
-            fintp.solve(tile)
-
-        timer.stop_comp("interp_em")
-        #--------------------------------------------------
-
-        #--------------------------------------------------
-        #push particles in x and u
-        timer.start_comp("push")
-        debug_print(grid, "push")
-
-        if lap != 1:
-            for tile in pytools.tiles_local(grid):
-                lf_boris(tile,dtf=conf.dtf)
-        else:
-            for tile in pytools.tiles_local(grid):
-                print(py_em(tile.get_container(0)))
-                lf_boris_first(tile,dtf=conf.dtf)
-
-        timer.stop_comp("push")
+                timer.stop_comp("push")
 
 
-        # advance B half
+                # advance B half
+                #--------------------------------------------------
+                #push B half
+                timer.start_comp("push_half_b2")
+                debug_print(grid, "push_half_b2")
 
-        #--------------------------------------------------
-        #push B half
-        timer.start_comp("push_half_b2")
-        debug_print(grid, "push_half_b2")
+                for tile in pytools.tiles_all(grid):
+                    fldprop.push_half_b(tile)
 
-        for tile in pytools.tiles_all(grid):
-            fldprop.push_half_b(tile)
-
-        timer.stop_comp("push_half_b2")
-
-
-        #--------------------------------------------------
-        # comm B
-        timer.start_comp("mpi_e1")
-        debug_print(grid, "mpi_e1")
-
-        grid.send_data(1)
-        grid.recv_data(1)
-        grid.wait_data(1)
-
-        timer.stop_comp("mpi_e1")
-
-        #--------------------------------------------------
-        #update boundaries
-        timer.start_comp("upd_bc2")
-        debug_print(grid, "upd_bc2")
-
-        for tile in pytools.tiles_all(grid):
-            tile.update_boundaries(grid)
-
-        timer.stop_comp("upd_bc2")
+                timer.stop_comp("push_half_b2")
 
 
-        ##################################################
-        # advance E
+                #--------------------------------------------------
+                # comm B
+                timer.start_comp("mpi_e1")
+                debug_print(grid, "mpi_e1")
 
-        #--------------------------------------------------
-        #push E
-        timer.start_comp("push_e")
-        debug_print(grid, "push_e")
+                grid.send_data(1)
+                grid.recv_data(1)
+                grid.wait_data(1)
 
-        # for cid in grid.get_tile_ids():
-        #     tile = grid.get_tile(cid)
-        for tile in pytools.tiles_all(grid):
-            fldprop.push_e(tile)
+                timer.stop_comp("mpi_e1")
 
-        timer.stop_comp("push_e")
+                #--------------------------------------------------
+                #update boundaries
+                timer.start_comp("upd_bc2")
+                debug_print(grid, "upd_bc2")
 
+                for tile in pytools.tiles_all(grid):
+                    tile.update_boundaries(grid)
 
-        #Current calculations
-        # # --------------------------------------------------
-        # # current calculation; charge conserving current deposition
-        # t1 = timer.start_comp("comp_curr")
-        # for tile in pytools.tiles_local(grid):
-        #     currint.solve(tile)
-        # timer.stop_comp(t1)
-        #
-        # # --------------------------------------------------
-        # # clear virtual current arrays for boundary addition after mpi
-        # t1 = timer.start_comp("clear_vir_cur")
-        # for tile in pytools.tiles_virtual(grid):
-        #     tile.clear_current()
-        # timer.stop_comp(t1)
-        #
-        # # --------------------------------------------------
-        # # mpi send currents
-        # t1 = timer.start_comp("mpi_cur")
-        # grid.send_data(0)
-        # grid.recv_data(0)
-        # grid.wait_data(0)
-        # timer.stop_comp(t1)
-        #
-        # # --------------------------------------------------
-        # # exchange currents
-        # t1 = timer.start_comp("cur_exchange")
-        # for tile in pytools.tiles_all(grid):
-        #     tile.exchange_currents(grid)
-        # timer.stop_comp(t1)
+                timer.stop_comp("upd_bc2")
 
 
+                ##################################################
+                # advance E
+
+                #--------------------------------------------------
+                #push E half
+                timer.start_comp("push_e")
+                debug_print(grid, "push_e")
+
+                # for cid in grid.get_tile_ids():
+                #     tile = grid.get_tile(cid)
+                fldprop.dt = col.delta_m[m]
+                for tile in pytools.tiles_all(grid):
+                    fldprop.push_e(tile)
+
+                timer.stop_comp("push_e")
+
+                #--------------------------------------------------
+                #interpolate fields (can move to next asap)
+                timer.start_comp("interp_em")
+                debug_print(grid, "interp_em")
+
+                for tile in pytools.tiles_local(grid):
+                    fintp.solve(tile)
+
+                timer.stop_comp("interp_em")
+                #--------------------------------------------------
+
+                #--------------------------------------------------
+                #push particles in u
+                timer.start_comp("push")
+                debug_print(grid, "push")
+
+                for tile in pytools.tiles_local(grid):
+                    boris_sdc_vel(tile,col,m)
+                    # pushvel.solve(tile)
+
+                timer.stop_comp("push")
+
+
+                #--------------------------------------------------
+                #push E half
+                timer.start_comp("push_e")
+                debug_print(grid, "push_e")
+
+                # for cid in grid.get_tile_ids():
+                #     tile = grid.get_tile(cid)
+                fldprop.dt = col.delta_m[m]
+                for tile in pytools.tiles_all(grid):
+                    fldprop.push_e(tile)
+
+                timer.stop_comp("push_e")
+
+
+            ## Update nodal arrays for new iteration
+            col.E = np.copy(col.En[:,:,:])
+            col.B = np.copy(col.Bn[:,:,:])
+            col.x = np.copy(col.xn[:,:,:])
+            col.u = np.copy(col.un[:,:,:])
+            col.calc_residual(k)
 
         ##################################################
         # particle communication (only local/boundary tiles)
@@ -566,38 +561,8 @@ if __name__ == "__main__":
         # --------------------------------------------------
         timer.stop_comp("filter")
 
-        # --------------------------------------------------
-        # add current to E
-        # t1 = timer.start_comp("add_cur")
-        # for tile in pytools.tiles_all(grid):
-        #     tile.deposit_current()
-        # timer.stop_comp(t1)
-
-        # comm E
-        t1 = timer.start_comp("mpi_e2")
-        grid.send_data(1)
-        grid.recv_data(1)
-        grid.wait_data(1)
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # comm B
-        t1 = timer.start_comp("mpi_b1")
-        grid.send_data(2)
-        grid.recv_data(2)
-        grid.wait_data(2)
-        timer.stop_comp(t1)
-
-        # --------------------------------------------------
-        # update boundaries
-        t1 = timer.start_comp("upd_bc0")
-        for tile in pytools.tiles_all(grid):
-            tile.update_boundaries(grid)
-        timer.stop_comp(t1)
-
         ##################################################
         # data reduction and I/O
-
         cid = grid.id(0,0,0)
         c = grid.get_tile(cid)
         container = c.get_container(0)
@@ -609,8 +574,8 @@ if __name__ == "__main__":
         vx.append(container.vel(0))
         vy.append(container.vel(1))
         vz.append(container.vel(2))
-
-
+        xres.append(np.linalg.norm(col.Rx,axis=1))
+        vres.append(np.linalg.norm(col.Rv,axis=1))
 
         timer.lap("step")
         if (lap % conf.interval == 0):
@@ -663,9 +628,9 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_lf(t,x,y,z,vx,vy,vz,conf,'leapfrog_' + conf.name + '_')
+    output_sdc(t,x,y,z,vx,vy,vz,xres,vres,conf,'sdc_py_' + conf.name + '_')
 
-    filename = "lf_{0}.h5".format(conf.name)
+    filename = "sdc_M{0}K{1}_{2}.h5".format(conf.M,conf.K,conf.name)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
 
     print("")

@@ -6,13 +6,14 @@ from mpi4py import MPI
 import numpy as np
 import sys, os
 import matplotlib.pyplot as plt
+import time
 
 # runko + auxiliary modules
 import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
-from pyhack.leapfrog import lf_boris, lf_boris_first
 from pyhack.py_runko_aux_3d import *
+from pyhack.velocity_verlet import vv_pos, vv_vel
 
 # problem specific modules
 np.random.seed(1)
@@ -23,13 +24,14 @@ debug = False
 def py_init(conf):
     t = [0]
     x = [np.array([conf.x_start])]
-    y = [np.array([conf.NyMesh/2+ conf.NyMesh/4.])]
-    z = [np.array([conf.NzMesh/2+ conf.NzMesh/4.])]
+    y = [np.array([conf.NyMesh/2])]
+    z = [np.array([conf.NzMesh/10])]
     vx = [np.array([conf.ux])]
     vy = [np.array([conf.uy])]
     vz = [np.array([conf.uz])]
 
     return t,x,y,z,vx,vy,vz
+
 
 def debug_print(n, msg):
     if debug:
@@ -73,8 +75,8 @@ def direct_inject(grid, conf):
     container = c.get_container(0)
 
     x = conf.x_start
-    y = conf.NyMesh/2. + conf.NyMesh/4.
-    z = conf.NzMesh/2. + conf.NzMesh/4.
+    y = conf.NyMesh/2.
+    z = conf.NzMesh/10.
     x01 = [x,y,z]
 
     vx = conf.ux
@@ -114,9 +116,9 @@ def insert_em(grid, conf):
                     yee.by[l,m,n] = 0. #conf.binit*np.sin(btheta)*np.sin(bphi)
                     yee.bz[l,m,n] = conf.binit #conf.binit*np.sin(btheta)*np.cos(bphi)
 
-                    yee.ex[l,m,n] = (conf.NxMesh/2.-iglob) * conf.einit
-                    yee.ey[l,m,n] = (conf.NyMesh/2.-jglob) * conf.einit #-beta*yee.bz[l,m,n]
-                    yee.ez[l,m,n] = -2*(conf.NzMesh/2.-kglob) * conf.einit #beta*yee.by[l,m,n]
+                    yee.ex[l,m,n] = 0.
+                    yee.ey[l,m,n] = 0. #-beta*yee.bz[l,m,n]
+                    yee.ez[l,m,n] = conf.einit #beta*yee.by[l,m,n]
 
 
 if __name__ == "__main__":
@@ -128,6 +130,8 @@ if __name__ == "__main__":
         do_print = False
 
     if do_print:
+        print("")
+        print("")
         print("Running with {} MPI processes.".format(MPI.COMM_WORLD.Get_size()))
 
     ##################################################
@@ -178,7 +182,7 @@ if __name__ == "__main__":
     xmax = conf.Nx*conf.NxMesh #XXX scaled length
     ymin = 0.0
     ymax = conf.Ny*conf.NyMesh
-    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax, conf.zmin,conf.zmax)
+    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax, conf.zmin, conf.zmax)
 
     # compute initial mpi ranks using Hilbert's curve partitioning
     pytools.balance_mpi(grid, conf)
@@ -261,8 +265,8 @@ if __name__ == "__main__":
 
 
     Nsamples = conf.Nt
-    #pusher   = pypic.BorisPusher()
-    pusher   = pypic.VayPusher()
+    pushloc   = pypic.VerletLocPusher()
+    pushvel   = pypic.VerletVelPusher()
 
 
     fldprop  = pyfld.FDTD2()
@@ -299,12 +303,8 @@ if __name__ == "__main__":
 
     time = lap*(conf.dtf*conf.cfl/conf.c_omp)
     for lap in range(lap, conf.Nt+1):
+
         debug_print(grid, "lap_start")
-
-        #--------------------------------------------------
-        # Particle position push
-
-
 
         #--------------------------------------------------
         # comm B
@@ -358,10 +358,6 @@ if __name__ == "__main__":
 
         timer.stop_comp("upd_bc1")
 
-
-        ##################################################
-        # move particles (only locals tiles)
-
         #--------------------------------------------------
         #interpolate fields (can move to next asap)
         timer.start_comp("interp_em")
@@ -373,24 +369,22 @@ if __name__ == "__main__":
         timer.stop_comp("interp_em")
         #--------------------------------------------------
 
+        ##################################################
         #--------------------------------------------------
-        #push particles in x and u
+        #push particles in x
         timer.start_comp("push")
         debug_print(grid, "push")
 
-        if lap != 1:
-            for tile in pytools.tiles_local(grid):
-                lf_boris(tile,dtf=conf.dtf)
-        else:
-            for tile in pytools.tiles_local(grid):
-                print(py_em(tile.get_container(0)))
-                lf_boris_first(tile,dtf=conf.dtf)
+        for tile in pytools.tiles_local(grid):
+            E_old = vv_pos(tile,dtf=conf.dtf)
+            # pushloc.solve(tile)
 
         timer.stop_comp("push")
 
 
-        # advance B half
 
+
+        # advance B half
         #--------------------------------------------------
         #push B half
         timer.start_comp("push_half_b2")
@@ -428,17 +422,50 @@ if __name__ == "__main__":
         # advance E
 
         #--------------------------------------------------
-        #push E
+        #push E half
         timer.start_comp("push_e")
         debug_print(grid, "push_e")
 
-        # for cid in grid.get_tile_ids():
-        #     tile = grid.get_tile(cid)
         for tile in pytools.tiles_all(grid):
             fldprop.push_e(tile)
 
         timer.stop_comp("push_e")
 
+        #--------------------------------------------------
+        #interpolate fields (can move to next asap)
+        timer.start_comp("interp_em")
+        debug_print(grid, "interp_em")
+
+        for tile in pytools.tiles_local(grid):
+            fintp.solve(tile)
+
+        timer.stop_comp("interp_em")
+        #--------------------------------------------------
+
+        #--------------------------------------------------
+        #push particles in u
+        timer.start_comp("push")
+        debug_print(grid, "push")
+
+        for tile in pytools.tiles_local(grid):
+            vv_vel(tile,dtf=conf.dtf,E_old=E_old)
+            # pushvel.solve(tile)
+
+        timer.stop_comp("push")
+
+
+        #--------------------------------------------------
+        #push E half
+        timer.start_comp("push_e")
+        debug_print(grid, "push_e")
+
+        # for cid in grid.get_tile_ids():
+        #     tile = grid.get_tile(cid)
+        fldprop.dt = conf.dtf
+        for tile in pytools.tiles_all(grid):
+            fldprop.push_e(tile)
+
+        timer.stop_comp("push_e")
 
         #Current calculations
         # # --------------------------------------------------
@@ -469,7 +496,6 @@ if __name__ == "__main__":
         # for tile in pytools.tiles_all(grid):
         #     tile.exchange_currents(grid)
         # timer.stop_comp(t1)
-
 
 
         ##################################################
@@ -574,19 +600,19 @@ if __name__ == "__main__":
         # timer.stop_comp(t1)
 
         # comm E
-        t1 = timer.start_comp("mpi_e2")
-        grid.send_data(1)
-        grid.recv_data(1)
-        grid.wait_data(1)
-        timer.stop_comp(t1)
+        # t1 = timer.start_comp("mpi_e2")
+        # grid.send_data(1)
+        # grid.recv_data(1)
+        # grid.wait_data(1)
+        # timer.stop_comp(t1)
 
         # --------------------------------------------------
         # comm B
-        t1 = timer.start_comp("mpi_b1")
-        grid.send_data(2)
-        grid.recv_data(2)
-        grid.wait_data(2)
-        timer.stop_comp(t1)
+        # t1 = timer.start_comp("mpi_b1")
+        # grid.send_data(2)
+        # grid.recv_data(2)
+        # grid.wait_data(2)
+        # timer.stop_comp(t1)
 
         # --------------------------------------------------
         # update boundaries
@@ -597,7 +623,6 @@ if __name__ == "__main__":
 
         ##################################################
         # data reduction and I/O
-
         cid = grid.id(0,0,0)
         c = grid.get_tile(cid)
         container = c.get_container(0)
@@ -610,8 +635,6 @@ if __name__ == "__main__":
         vy.append(container.vel(1))
         vz.append(container.vel(2))
 
-
-
         timer.lap("step")
         if (lap % conf.interval == 0):
             debug_print(grid, "io")
@@ -622,8 +645,10 @@ if __name__ == "__main__":
             print("------------------------------------------------------")
             print("x-position:" + str(x[lap]))
             print("y-position:" + str(y[lap]))
+            print("z-position:" + str(z[lap]))
             print("x-vel:" + str(vx[lap]))
             print("y-vel:" + str(vy[lap]))
+            print("z-vel:" + str(vz[lap]))
             print("------------------------------------------------------")
 
             #for cid in grid.get_tile_ids():
@@ -663,9 +688,9 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_lf(t,x,y,z,vx,vy,vz,conf,'leapfrog_' + conf.name + '_')
+    output_vv(t,x,y,z,vx,vy,vz,conf,'vv_py_' + conf.name + '_')
 
-    filename = "lf_{0}.h5".format(conf.name)
+    filename = "vv_{0}.h5".format(conf.name)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
 
     print("")

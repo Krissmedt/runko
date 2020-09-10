@@ -15,11 +15,11 @@ class Configuration_Gyro(Configuration):
         if do_print:
             print("Initializing gyration setup...")
 
-        self.twoD = False
-        self.threeD = True
+        self.threeD = False
+        self.twoD = True
 
-        self.M = 3
-        self.K = 2
+        self.M = 5
+        self.K = 5
 
         #---------cold plasma-----------
         self.bphi=90.0  #Bfield z angle (bphi=0  bz, bphi=90 -> x-y plane)
@@ -40,18 +40,21 @@ class Configuration_Gyro(Configuration):
 
         #particle 1, initialised to make perfect larmor orbit corresponding
         #to speed gamma.
-        self.vx = self.beta_x*c
-        self.vy = self.beta_y*c
-        self.vz = self.beta_z*c
-
-        self.gamma = np.sqrt(1/(1-(self.vx**2+self.vy**2+self.vz**2)/c**2))
-
-        self.ux = self.vx*self.gamma
-        self.uy = self.vy*self.gamma
-        self.uz = self.vz*self.gamma
-
+        self.beta = sqrt(1-1/self.gamma**2.)
+        self.vy = self.beta*c
         self.cfreq = (self.qe*self.binit)/(self.gamma*abs(self.qe)*c**2)
+        # self.larmor = self.vy*self.gamma*c**2/self.binit
         self.larmor = self.vy/self.cfreq
+
+        #particle 1, initialised to make half Larmor radius orbit of particle 1
+        self.vy2 = 0.5*self.vy
+        self.beta2 = self.vy2/c
+        self.gamma2 = 1/np.sqrt(1-self.beta2**2)
+        self.cfreq2 = (self.qe*self.binit)/(self.gamma2*abs(self.qe)*c**2)
+        self.larmor2 = self.vy2/self.cfreq2
+
+        self.uy = self.vy * self.gamma
+        self.uy2 = self.vy2 * self.gamma2
 
         #--------------------------------------------------
         # field initialization
@@ -59,13 +62,13 @@ class Configuration_Gyro(Configuration):
         self.Nx = 1
         self.Ny = 1
         self.Nz = 1
-        # self.NxMesh = 10
-        # self.NyMesh = 10
-        # self.NzMesh = 10
+        self.NxMesh = 1
+        self.NyMesh = 1
+        self.NzMesh =1
 
-        # self.NxMesh = np.maximum(int(self.larmor*2.25),5)
-        # self.NyMesh = np.maximum(int(self.larmor*2.25),5)
-        # self.NzMesh = np.maximum(int(self.larmor*2.25),5)
+        self.NxMesh = np.maximum(int(self.larmor*2.5),5)
+        self.NyMesh = np.maximum(int(self.larmor*2.5),5)
+        # self.NzMesh =1
 
         self.dx=1.0
         self.dy=1.0
@@ -79,3 +82,4 @@ class Configuration_Gyro(Configuration):
         self.zmax = self.Nz*self.NzMesh*self.dz
 
         self.x_start = self.NxMesh/2. + self.larmor
+        self.x_start2 = self.NxMesh/2. + self.larmor2

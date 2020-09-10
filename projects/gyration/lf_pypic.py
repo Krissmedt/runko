@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 import pytools  # runko python tools
 
 # Runko-Python functionality by Krissmedt
+from pyhack.py_runko_aux import *
 from pyhack.leapfrog import lf_boris, lf_boris_first
-from pyhack.py_runko_aux_3d import *
+from pyhack.analytical_gyro import *
 
 # problem specific modules
 np.random.seed(1)
@@ -21,15 +22,18 @@ from init_problem import Configuration_Gyro as Configuration
 debug = False
 
 def py_init(conf):
-    t = [0]
-    x = [np.array([conf.x_start])]
-    y = [np.array([conf.NyMesh/2+ conf.NyMesh/4.])]
-    z = [np.array([conf.NzMesh/2+ conf.NzMesh/4.])]
-    vx = [np.array([conf.ux])]
-    vy = [np.array([conf.uy])]
-    vz = [np.array([conf.uz])]
+    xr,yr,vxr,vyr = analytical_gyro_single(-conf.dtf*conf.cfl/2,conf)
 
-    return t,x,y,z,vx,vy,vz
+    t = [0]
+    x = [np.array([conf.x_start,conf.x_start2])]
+    y = [np.array([conf.NyMesh/2,conf.NyMesh/2])]
+    # vx = [vxr]
+    # vy = [vyr]
+
+    vx = [np.array([0,0])]
+    vy = [np.array([conf.vy,conf.vy2])]
+
+    return t,x,y,vx,vy
 
 def debug_print(n, msg):
     if debug:
@@ -68,25 +72,39 @@ def filler(xloc, ispcs, conf):
 
 
 def direct_inject(grid, conf):
-    cid = grid.id(0,0,0)
+    cid = grid.id(0,0)
     c = grid.get_tile(cid)
     container = c.get_container(0)
 
-    x = conf.x_start
-    y = conf.NyMesh/2. + conf.NyMesh/4.
-    z = conf.NzMesh/2. + conf.NzMesh/4.
-    x01 = [x,y,z]
+    xr,yr,vxr,vyr = analytical_gyro_single(-conf.dtf*conf.cfl/2,conf)
 
-    vx = conf.ux
+    x = conf.x_start
+    x2 = conf.x_start2
+    y = conf.NyMesh/2.
+
+    z = 0.5
+    x01 = [x,y,z]
+    x02 = [x2,y,z]
+
+    # vx = vxr[0]
+    # vx2 = vxr[1]
+    # vy = vyr[0]
+    # vy2 = vyr[1]
+
+    vx = 0
+    vx2 = 0
     vy = conf.uy
-    vz = conf.uz
+    vy2 = conf.uy2
+
+    vz = 0
     u01 = [vx,vy,vz]
+    u02 = [vx2,vy2,vz]
 
     container.add_particle(x01,u01,1.0)
-    # container.add_particle(x02,u02,1.0)
+    container.add_particle(x02,u02,1.0)
 
-    x0 = [x01]
-    u0 = [u01]
+    x0 = [x01,x02]
+    u0 = [u01,u02]
 
     return x0,u0
 
@@ -97,6 +115,7 @@ def insert_em(grid, conf):
     #into radians
     btheta = conf.btheta/180.*np.pi
     bphi   = conf.bphi/180.*np.pi
+    beta   = conf.beta
 
     kk = 0
     for cid in grid.get_tile_ids():
@@ -110,13 +129,14 @@ def insert_em(grid, conf):
                 for l in range(-3, conf.NxMesh+3):
                     # get global coordinates
                     iglob, jglob, kglob = pytools.ind2loc((ii, jj, kk), (l, m, n), conf)
+
                     yee.bx[l,m,n] = 0. #conf.binit*np.cos(btheta)
                     yee.by[l,m,n] = 0. #conf.binit*np.sin(btheta)*np.sin(bphi)
                     yee.bz[l,m,n] = conf.binit #conf.binit*np.sin(btheta)*np.cos(bphi)
 
-                    yee.ex[l,m,n] = (conf.NxMesh/2.-iglob) * conf.einit
-                    yee.ey[l,m,n] = (conf.NyMesh/2.-jglob) * conf.einit #-beta*yee.bz[l,m,n]
-                    yee.ez[l,m,n] = -2*(conf.NzMesh/2.-kglob) * conf.einit #beta*yee.by[l,m,n]
+                    yee.ex[l,m,n] = 0.0
+                    yee.ey[l,m,n] = 0. #-beta*yee.bz[l,m,n]
+                    yee.ez[l,m,n] = 0. #beta*yee.by[l,m,n]
 
 
 if __name__ == "__main__":
@@ -178,7 +198,7 @@ if __name__ == "__main__":
     xmax = conf.Nx*conf.NxMesh #XXX scaled length
     ymin = 0.0
     ymax = conf.Ny*conf.NyMesh
-    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax, conf.zmin,conf.zmax)
+    grid.set_grid_lims(conf.xmin, conf.xmax, conf.ymin, conf.ymax)
 
     # compute initial mpi ranks using Hilbert's curve partitioning
     pytools.balance_mpi(grid, conf)
@@ -202,7 +222,7 @@ if __name__ == "__main__":
         np.random.seed(1)  # sync rnd generator seed for different mpi ranks
 
         # initialising solution arrays
-        t,x,y,z,vx,vy,vz = py_init(conf)
+        t,x,y,vx,vy = py_init(conf)
         # injecting plasma particles
         prtcl_stat = direct_inject(grid,conf) #inject plasma particles individually by loc,vel
         if do_print:
@@ -383,7 +403,6 @@ if __name__ == "__main__":
                 lf_boris(tile,dtf=conf.dtf)
         else:
             for tile in pytools.tiles_local(grid):
-                print(py_em(tile.get_container(0)))
                 lf_boris_first(tile,dtf=conf.dtf)
 
         timer.stop_comp("push")
@@ -598,17 +617,15 @@ if __name__ == "__main__":
         ##################################################
         # data reduction and I/O
 
-        cid = grid.id(0,0,0)
+        cid = grid.id(0,0)
         c = grid.get_tile(cid)
         container = c.get_container(0)
 
         t.append(time)
         x.append(container.loc(0))
         y.append(container.loc(1))
-        z.append(container.loc(2))
         vx.append(container.vel(0))
         vy.append(container.vel(1))
-        vz.append(container.vel(2))
 
 
 
@@ -663,10 +680,10 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_lf(t,x,y,z,vx,vy,vz,conf,'leapfrog_' + conf.name + '_')
+    output_lf(t,x,y,vx,vy,conf,'leapfrog_' + conf.name + '_')
 
     filename = "lf_{0}.h5".format(conf.name)
-    wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
+    wp_dump(t,x,y,vx,vy,conf,filename)
 
     print("")
     print("------------------------------------- END ------------------------------------")
