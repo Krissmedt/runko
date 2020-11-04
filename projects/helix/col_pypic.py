@@ -447,9 +447,9 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_sdc(t,x,y,z,vx,vy,vz,xres,vres,conf,'coll_py_' + conf.name + '_')
 
-    filename = "coll_M{0}_{1}.h5".format(conf.M,conf.name)
+    filename = "coll_M{0}_{1}".format(conf.M,conf.name)
+    output_sdc(t,x,y,z,vx,vy,vz,xres,vres,conf,filename)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
 
     print("")

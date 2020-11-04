@@ -686,14 +686,9 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    print("Position: {0}".format(py_pos(container)))
-    print("Velocity: {0}".format(py_vel(container)*conf.cfl))
-    print("E Field: {0}".format(py_em(container)[0]))
-    print("B Field: {0}".format(py_em(container)[1]))
-    output_vv(t,x,y,z,vx,vy,vz,conf,'vv_py_' + conf.name + '_')
-
-    filename = "vv_{0}.h5".format(conf.name)
+    filename = "vv_{0}".format(conf.name)
+    output_vv(t,x,y,z,vx,vy,vz,conf,filename)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
-
+    
     print("")
     print("------------------------------------- END ------------------------------------")

@@ -662,9 +662,8 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_lf(t,x,y,z,vx,vy,vz,conf,'lf_' + conf.name + '_')
-
-    filename = "lf_{0}.h5".format(conf.name)
+    filename = "lf_{0}".format(conf.name)
+    output_lf(t,x,y,z,vx,vy,vz,conf,filename)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
 
     print("")

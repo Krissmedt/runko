@@ -688,9 +688,8 @@ if __name__ == "__main__":
     timer.stop("total")
     timer.stats("total")
 
-    output_vv(t,x,y,z,vx,vy,vz,conf,'vv_py_' + conf.name + '_')
-
-    filename = "vv_{0}.h5".format(conf.name)
+    filename = "vv_{0}".format(conf.name)
+    output_vv(t,x,y,z,vx,vy,vz,conf,filename)
     wp_dump(t,x,y,z,vx,vy,vz,conf,filename)
 
     print("")

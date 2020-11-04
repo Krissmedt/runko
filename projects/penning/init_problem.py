@@ -19,7 +19,7 @@ class Configuration_Gyro(Configuration):
         self.threeD = True
 
         self.M = 3
-        self.K = 2
+        self.K = 4
 
         #---------cold plasma-----------
         self.bphi=90.0  #Bfield z angle (bphi=0  bz, bphi=90 -> x-y plane)
