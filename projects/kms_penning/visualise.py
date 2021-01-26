@@ -29,12 +29,12 @@ filenames["Runko Leapfrog"] = "lf_pen_data.h5"
 
 
 plot_params = {}
-plot_params['legend.fontsize'] = 16
+plot_params['legend.fontsize'] = 22
 plot_params['figure.figsize'] = (12,8)
-plot_params['axes.labelsize'] = 20
-plot_params['axes.titlesize'] = 20
-plot_params['xtick.labelsize'] = 16
-plot_params['ytick.labelsize'] = 16
+plot_params['axes.labelsize'] = 24
+plot_params['axes.titlesize'] = 24
+plot_params['xtick.labelsize'] = 24
+plot_params['ytick.labelsize'] = 24
 plot_params['lines.linewidth'] = 4
 plot_params['axes.titlepad'] = 5
 plot_params['legend.loc'] = 'upper right'
@@ -74,9 +74,9 @@ for key,value in filenames.items():
     ax_iso.set_xlim([2,8])
     ax_iso.set_ylim([2,9])
     ax_iso.set_zlim([2,9])
-    ax_iso.set_xlabel('$x$')
-    ax_iso.set_ylabel('$y$')
-    ax_iso.set_zlabel('$z$')
+    ax_iso.set_xlabel('\n$x$')
+    ax_iso.set_ylabel('\n$y$')
+    ax_iso.set_zlabel('\n$z$')
     ax_iso.legend()
 
 

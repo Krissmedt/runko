@@ -58,6 +58,7 @@ def output_lf(t,x,y,z,vx,vy,vz,conf,name):
         vy = np.array(vy)
         vz = np.array(vz)
 
+        data_save(t,x,y,z,vx,vy,vz,conf,name)
         plot_traj(t,x,y,conf,name)
         plot_isotraj(x,y,z,conf,name,plim=1)
         t[1:] = t[1:]-conf.cfl/2
@@ -74,6 +75,8 @@ def output_vv(t,x,y,z,vx,vy,vz,conf,name):
         vy = np.array(vy)
         vz = np.array(vz)
 
+
+        data_save(t,x,y,z,vx,vy,vz,conf,name)
         plot_traj(t,x,y,conf,name)
         plot_isotraj(x,y,z,conf,name,plim=1)
         plot_vel(t,vx,vy,vz,conf,name)
@@ -91,6 +94,7 @@ def output_sdc(t,x,y,z,vx,vy,vz,xres,vres,conf,name):
         xres = np.array(xres,ndmin=2)
         vres = np.array(vres,ndmin=2)
 
+        data_save(t,x,y,z,vx,vy,vz,conf,name,xres=xres,vres=vres)
         plot_traj(t,x,y,conf,name)
         plot_isotraj(x,y,z,conf,name,plim=1)
         plot_vel(t,vx,vy,vz,conf,name)
@@ -157,6 +161,18 @@ def plot_isotraj(x,y,z,conf,name,plim=1,label=""):
 
 
 def plot_xres(t,xres,name,label=""):
+    plot_params = {}
+    plot_params['legend.fontsize'] = 22
+    plot_params['figure.figsize'] = (12,8)
+    plot_params['axes.labelsize'] = 24
+    plot_params['axes.titlesize'] = 24
+    plot_params['xtick.labelsize'] = 24
+    plot_params['ytick.labelsize'] = 24
+    plot_params['lines.linewidth'] = 4
+    plot_params['axes.titlepad'] = 5
+    plot_params['legend.loc'] = 'upper right'
+    plt.rcParams.update(plot_params)
+
     fig_xres = plt.figure(6)
     ax_xres = fig_xres.add_subplot(111)
     for k in range(0,xres.shape[1]):
@@ -171,6 +187,18 @@ def plot_xres(t,xres,name,label=""):
 
 
 def plot_vres(t,vres,name,label=""):
+    plot_params = {}
+    plot_params['legend.fontsize'] = 22
+    plot_params['figure.figsize'] = (12,8)
+    plot_params['axes.labelsize'] = 24
+    plot_params['axes.titlesize'] = 24
+    plot_params['xtick.labelsize'] = 24
+    plot_params['ytick.labelsize'] = 24
+    plot_params['lines.linewidth'] = 4
+    plot_params['axes.titlepad'] = 5
+    plot_params['legend.loc'] = 'upper right'
+    plt.rcParams.update(plot_params)
+
     fig_vres = plt.figure(7)
     ax_vres = fig_vres.add_subplot(111)
     for k in range(0,vres.shape[1]):
@@ -184,6 +212,26 @@ def plot_vres(t,vres,name,label=""):
     fig_vres.savefig(name+'_vres.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
 
 
+def data_save(t,x,y,z,vx,vy,vz,conf,filename,xres=0,vres=0):
+    try:
+        file = h5.File(conf.data_root+filename+"_data.h5",'w')
+    except OSError:
+        file.close()
+        file = h5.File(conf.data_root+"data_"+filename+"_data.h5",'w')
+
+    grp = file.create_group('fields')
+    grp.create_dataset('Nt',data=conf.Nt)
+    grp.create_dataset('x',data=x)
+    grp.create_dataset('y',data=y)
+    grp.create_dataset('z',data=z)
+    grp.create_dataset('vx',data=vx)
+    grp.create_dataset('vy',data=vy)
+    grp.create_dataset('vz',data=vz)
+    grp.create_dataset('xres',data=xres)
+    grp.create_dataset('vres',data=vres)
+    grp.create_dataset('t',data=t)
+    file.close()
+
 def wp_dump(t,x,y,z,vx,vy,vz,conf,filename):
     Nt = conf.Nt
     x = np.array(x[-1])
@@ -196,10 +244,10 @@ def wp_dump(t,x,y,z,vx,vy,vz,conf,filename):
 
     if conf.ref_sim == 1:
         try:
-            file = h5.File(conf.data_root+filename,'w')
+            file = h5.File(conf.data_root+filename+"_wp.h5",'w')
         except OSError:
             file.close()
-            file = h5.File(conf.data_root+filename,'w')
+            file = h5.File(conf.data_root+filename+"_wp.h5",'w')
 
         grp = file.create_group('fields')
         grp.create_dataset('Nt',data=np.array(Nt)[np.newaxis],maxshape=(None,))
@@ -214,10 +262,10 @@ def wp_dump(t,x,y,z,vx,vy,vz,conf,filename):
 
     elif conf.workprec == 1:
         try:
-            file = h5.File(conf.data_root+filename,'r+')
+            file = h5.File(conf.data_root+filename+"_wp.h5",'r+')
         except OSError:
             file.close()
-            file = h5.File(conf.data_root+filename,'r+')
+            file = h5.File(conf.data_root+filename+"_wp.h5",'r+')
 
         file["fields/Nt"].resize((file["fields/Nt"].shape[0]+1),axis=0)
         file["fields/Nt"][-1] = conf.Nt

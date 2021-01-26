@@ -21,30 +21,32 @@ fig_name = "wp"
 
 filenames = {}
 
-filenames["Ref"] = "coll_M5_helix.h5"
-filenames["Velocity-Verlet"] = "vv_helix.h5"
-filenames["Boris-SDC M2K1"] = "sdc_M2K1_helix.h5"
-filenames["Boris-SDC M2K2"] = "sdc_M2K2_helix.h5"
-filenames["Boris-SDC M3K2"] = "sdc_M3K2_helix.h5"
-filenames["Boris-SDC M3K3"] = "sdc_M3K3_helix.h5"
-filenames["Boris-SDC M3K4"] = "sdc_M3K4_helix.h5"
-filenames["Boris-SDC M5K4"] = "sdc_M5K4_helix.h5"
-filenames["Boris-SDC M5K5"] = "sdc_M5K5_helix.h5"
-filenames["Boris-SDC M5K6"] = "sdc_M5K6_helix.h5"
+filenames["Ref"] = "coll_M5_pen_ref.h5"
+# filenames["Collocation M5"] = "coll_M5_pen.h5"
+filenames["Velocity-Verlet"] = "vv_pen.h5"
 
-# filenames["Leapfrog"] = "lf_helix.h5"
+filenames["Boris-SDC M2K1"] = "sdc_M2K1_pen.h5"
+filenames["Boris-SDC M2K2"] = "sdc_M2K2_pen.h5"
+filenames["Boris-SDC M3K2"] = "sdc_M3K2_pen.h5"
+filenames["Boris-SDC M3K3"] = "sdc_M3K3_pen.h5"
+filenames["Boris-SDC M3K4"] = "sdc_M3K4_pen.h5"
+filenames["Boris-SDC M5K4"] = "sdc_M5K4_pen.h5"
+filenames["Boris-SDC M5K5"] = "sdc_M5K5_pen.h5"
+filenames["Boris-SDC M5K6"] = "sdc_M5K6_pen.h5"
 
+# filenames["Boris-SDC M2K1"] = "sdc_M2K1_pen.h5"
+# filenames["Leapfrog-Py"] = "lf_pen.h5"
 
 
 plot_params = {}
-plot_params['legend.fontsize'] = 16
+plot_params['legend.fontsize'] = 22
 plot_params['figure.figsize'] = (12,8)
-plot_params['axes.labelsize'] = 20
-plot_params['axes.titlesize'] = 20
-plot_params['xtick.labelsize'] = 16
-plot_params['ytick.labelsize'] = 16
+plot_params['axes.labelsize'] = 24
+plot_params['axes.titlesize'] = 24
+plot_params['xtick.labelsize'] = 24
+plot_params['ytick.labelsize'] = 24
 plot_params['lines.linewidth'] = 4
-plot_params['axes.titlepad'] = 5
+plot_params['axes.titlepad'] = 10
 plot_params['legend.loc'] = 'upper right'
 plt.rcParams.update(plot_params)
 r = 1
@@ -69,7 +71,7 @@ for key,value in filenames.items():
         solvx = np.copy(vx[-1,0])
         solvy = np.copy(vy[-1,0])
         solvz = np.copy(vz[-1,0])
-        ref_time = np.copy(dumptime[-1])
+        ref_time = np.copy(dumptime)
         continue
 
     assert np.all(np.isclose(dumptime[:],dumptime[0]))
@@ -93,7 +95,9 @@ for key,value in filenames.items():
     print(key+" v order: {0}".format(vfactors))
 
     label = key
-    Nt = Nt
+    Nt = Nt[:]
+    rhs = Nt
+
 
     if key == "Velocity-Verlet":
         c = "black"
@@ -120,6 +124,7 @@ for key,value in filenames.items():
         K = int(key[key.find("K")+1])
         rhs = (M-1)*K*Nt[:]
 
+
     ## x order Plot w/ rhs
     fig_rhs = plt.figure(1)
     ax_rhs = fig_rhs.add_subplot(1, 1, 1)
@@ -145,7 +150,7 @@ ax_nt.legend(by_label.values(), by_label.keys(),loc='lower right')
 
 handles, labels = fig_v_nt.gca().get_legend_handles_labels()
 by_label = OrderedDict(zip(labels, handles))
-ax_v_nt.legend(by_label.values(), by_label.keys(),loc='lower right')
+ax_v_nt.legend(by_label.values(), by_label.keys(),loc='lower left')
 
 axnl_list = []
 axnl_list.append(ax_rhs)
@@ -157,15 +162,17 @@ for ax in axnl_list:
     i +=1
     if i == 1:
         ax.set_xlabel('RHS evaluations')
+    elif i == 3:
+        ax.set_ylabel(r'$\Delta v^{\mathrm{rel}}$')
     else:
+        ax.set_ylabel(r'$\Delta x^{\mathrm{rel}}$')
         ax.set_xlabel(r'$N t$')
 
     orderSlope = -1
     ax.set_xscale('log')
     #ax_rhs.set_xlim(10**3,10**5)
     ax.set_yscale('log')
-    ax.set_ylim(10**(-15),10**(0))
-    ax.set_ylabel(r'$\Delta x^{\mathrm{rel}}$')
+    ax.set_ylim(10**(-10),10**(0))
 
     xRange = ax.get_xlim()
     yRange = ax.get_ylim()
@@ -179,6 +186,6 @@ for ax in axnl_list:
     ax.plot(xRange,orderLines(8*orderSlope,xRange,yRange),
                 ls=(0,(5,1)),c='0.8')
 
-fig_rhs.savefig(data_root + 'helix_'+ fig_name + '_rhs.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
-fig_nt.savefig(data_root + 'helix_' + fig_name + '_nt.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
-fig_v_nt.savefig(data_root + 'helix_' + fig_name + '_v_nt.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
+fig_rhs.savefig(data_root + 'pen_'+ fig_name + '_rhs.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.05,bbox_inches = 'tight')
+fig_nt.savefig(data_root + 'pen_' + fig_name + '_nt.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.05,bbox_inches = 'tight')
+fig_v_nt.savefig(data_root + 'pen_' + fig_name + '_v_nt.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.05,bbox_inches = 'tight')

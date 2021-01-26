@@ -5,9 +5,9 @@ import numpy as np
 def read_h5_array(f5, var_name):
 
     try:
-        nx = f5['Nx'].value
-        ny = f5['Ny'].value
-        nz = f5['Nz'].value
+        nx = f5['Nx'][()]
+        ny = f5['Ny'][()]
+        nz = f5['Nz'][()] #used to be .value rather than [()]
     except:
         nx,ny,nz = np.shape(f5[var_name])
         return f5[var_name]
@@ -23,5 +23,3 @@ def read_h5_array(f5, var_name):
     val = val.ravel(order='F').reshape((nx,ny,nz))
 
     return val
-
-

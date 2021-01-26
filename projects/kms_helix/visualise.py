@@ -29,12 +29,12 @@ filenames["Runko Leapfrog"] = "lf_helix_data.h5"
 
 
 plot_params = {}
-plot_params['legend.fontsize'] = 16
+plot_params['legend.fontsize'] = 22
 plot_params['figure.figsize'] = (12,8)
-plot_params['axes.labelsize'] = 20
-plot_params['axes.titlesize'] = 20
-plot_params['xtick.labelsize'] = 16
-plot_params['ytick.labelsize'] = 16
+plot_params['axes.labelsize'] = 24
+plot_params['axes.titlesize'] = 24
+plot_params['xtick.labelsize'] = 24
+plot_params['ytick.labelsize'] = 24
 plot_params['lines.linewidth'] = 4
 plot_params['axes.titlepad'] = 5
 plot_params['legend.loc'] = 'upper right'
@@ -56,13 +56,16 @@ i = 0
 for key,value in filenames.items():
     file = h5.File(data_root+value,'r')
     Nt = file["fields/Nt"]
-    dumptime = file["fields/t"]
+    t = file["fields/t"]
     x = file["fields/x"]
     y = file["fields/y"]
     z = file["fields/z"]
     vx = file["fields/vx"]
     vy = file["fields/vy"]
     vz = file["fields/vz"]
+    if "SDC" in key:
+        xres = file["fields/xres"]
+        vres = file["fields/vres"]
 
     ################ Plot isometric trajectory ################################
     for pii in range(0,plim):
@@ -74,9 +77,9 @@ for key,value in filenames.items():
     ax_iso.set_xlim([2,8])
     ax_iso.set_ylim([2,8])
     ax_iso.set_zlim([1,6])
-    ax_iso.set_xlabel('$x$')
-    ax_iso.set_ylabel('$y$')
-    ax_iso.set_zlabel('$z$')
+    ax_iso.set_xlabel('\n$x$')
+    ax_iso.set_ylabel('\n$y$')
+    ax_iso.set_zlabel('\n$z$')
     ax_iso.legend()
 
 
@@ -88,6 +91,20 @@ for key,value in filenames.items():
     ax_traj.set_xlabel('$x$')
     ax_traj.set_ylabel('$y$')
     ax_traj.legend()
+
+    ################ Plot SDC residual  ######################################
+    if "SDC" in key:
+        pass
+        # fig_xres = plt.figure(3)
+        # ax_xres = fig_traj.add_subplot(111)
+        # ax_xres.plot(t,xres,label=key,linewidth=linewidths[i],linestyle=linestyles[i])
+        # ax_xres.set_xlabel('$x$')
+        # ax_xres.set_ylabel('$y$')
+        # ax_xres.legend()
+        #
+        # fig_xres.savefig(data_root + 'helix_xres'+ fig_name + '.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
+        # fig_vres.savefig(data_root + 'helix_vres'+ fig_name + '.pdf', dpi=150, facecolor='w', edgecolor='w',orientation='portrait',pad_inches=0.2,bbox_inches = 'tight')
+        #
 
     i+=1
 
